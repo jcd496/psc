@@ -54,6 +54,9 @@ target_compile_features(mrc
     c_std_99
 )
 
+target_include_directories(mrc PUBLIC ${CUDA_NVTOOLS_EXT_INCLUDE})
+target_link_libraries(mrc PUBLIC ${CUDA_NVTOOLS_EXT_LIBRARIES})
+
 configure_file (
   "${PROJECT_SOURCE_DIR}/include/mrc_config.h.in"
   "${PROJECT_BINARY_DIR}/include/mrc_config.h"
@@ -61,3 +64,4 @@ configure_file (
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 add_subdirectory(tests)
+

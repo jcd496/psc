@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <mpi.h>
+#include <nvToolsExt.h>
 
 #include <mrc_config.h>
 
@@ -18,7 +19,16 @@ struct prof_info {
   long long total_time;
 };
 
+struct prof_data {
+  const char *name;
+  float simd;
+  int flops;
+  int bytes;
+};
+
 #define MAX_PROF (100)
+
+extern struct prof_data prof_data[MAX_PROF];
 
 extern struct prof_globals {
   int event_set;
@@ -37,6 +47,7 @@ prof_start(int pr)
   struct timeval tv;
   gettimeofday(&tv, NULL);
   prof_globals.info[pr].time -= tv.tv_sec * 1000000ll + tv.tv_usec;
+  nvtxRangePush(prof_data[pr].name);
 }
 
 static inline void
@@ -49,6 +60,7 @@ prof_restart(int pr)
   gettimeofday(&tv, NULL);
   prof_globals.info[pr].time -= tv.tv_sec * 1000000ll + tv.tv_usec;
   prof_globals.info[pr].cnt--;
+  nvtxRangePush(prof_data[pr].name);
 }
 
 static inline void
@@ -61,6 +73,7 @@ prof_stop(int pr)
   gettimeofday(&tv, NULL);
   prof_globals.info[pr].time += tv.tv_sec * 1000000ll + tv.tv_usec;
   prof_globals.info[pr].cnt++;
+  nvtxRangePop();
 }
 
 #ifdef __cplusplus
