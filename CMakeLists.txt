@@ -11,6 +11,8 @@ endforeach()
 
 add_subdirectory(src/libmrc)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
+
 project(PSC)
 
 include(CTest)
@@ -38,6 +40,8 @@ if(USE_CUDA)
 
   set(CUDA_NVTOOLS_EXT_INCLUDE "/usr/local/cuda/include" CACHE STRING "Location of nvToolsExt.h")
   set(CUDA_NVTOOLS_EXT_LIBRARIES "-lnvToolsExt" CACHE STRING "Location of libNvToolsExt.")
+
+  find_package(RMM)
 endif()
 
 set(MPI_CXX_SKIP_MPICXX ON)

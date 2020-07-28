@@ -60,6 +60,11 @@ if (USE_CUDA)
     
     cuda/cuda_heating.cu)
   target_include_directories(psc PUBLIC cuda)
+
+  if (RMM_FOUND)
+    target_compile_definitions(psc PUBLIC HAVE_RMM)
+    target_link_libraries(psc PUBLIC RMM::RMM)
+  endif()
 endif()
 
 if (USE_VPIC)
