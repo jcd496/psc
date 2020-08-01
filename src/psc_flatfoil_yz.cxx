@@ -10,7 +10,14 @@
 #include "../libpsc/psc_heating/psc_heating_impl.hxx"
 #include "heating_spot_foil.hxx"
 #include "inject_impl.hxx"
+#ifdef HAVE_RMM
+#include "rmm/thrust_rmm_allocator.h"
+#include "rmm/mr/device/default_memory_resource.hpp"
+#include "rmm/mr/device/cuda_memory_resource.hpp"
+#include "rmm/mr/device/cnmem_memory_resource.hpp"
+rmm::mr::cnmem_memory_resource* pool_mr;
 
+#endif
 #define DIM_3D
 
 // ======================================================================
@@ -189,9 +196,9 @@ PscParams psc_params;
 void setupParameters()
 {
   // -- set some generic PSC parameters
-  psc_params.nmax = 10000001; // 5001;
+  psc_params.nmax = 8;//10000001; // 5001;
   psc_params.cfl = 0.75;
-  psc_params.write_checkpoint_every_step = 1000;
+  psc_params.write_checkpoint_every_step = -4;
   psc_params.stats_every = 1;
 
   // -- start from checkpoint:
@@ -202,7 +209,7 @@ void setupParameters()
   // FIXME: This parameter would be a good candidate to be provided
   // on the command line, rather than requiring recompilation when change.
 
-  // read_checkpoint_filename = "checkpoint_500.bp";
+   //read_checkpoint_filename = "/gpfs/alpine/proj-shared/ast147/johnd/flatfoil-summit_6-24/FullRunDblGridPrt2/checkpoint_30000.bp";
 
   // -- Set some parameters specific to this case
   g.BB = 0.;
@@ -233,9 +240,12 @@ Grid_t* setupGrid()
 {
   // --- setup domain
 #ifdef DIM_3D
-  Grid_t::Real3 LL = {80., 80., 3. * 80.}; // domain size (in d_e)
-  Int3 gdims = {160, 160, 3 * 160};        // global number of grid points
-  Int3 np = {5, 5, 3 * 5};                 // division into patches
+  Grid_t::Real3 LL = {320., 160., 960.}; // domain size (in d_e)
+  Int3 gdims = {320, 160, 960};        // global number of grid points
+  Int3 np = {10, 5, 30};                 // division into patches
+  //Grid_t::Real3 LL = {1280., 640., 3840.}; // domain size (in d_e)
+  //Int3 gdims = {2*1280, 2*640, 2*3840};        // global number of grid points
+  //Int3 np = {2*40, 2*20, 2*120};                 // division into patches
 #else
   Grid_t::Real3 LL = {1., 800., 3. * 800.}; // domain size (in d_e)
   Int3 gdims = {1, 1600, 3 * 1600};         // global number of grid points
@@ -343,6 +353,7 @@ void run()
   // ----------------------------------------------------------------------
   // setup various parameters first
 
+
   setupParameters();
 
   // ----------------------------------------------------------------------
@@ -361,26 +372,26 @@ void run()
   // Set up various objects needed to run this case
 
   // -- Balance
-  psc_params.balance_interval = 500;
+  psc_params.balance_interval = 10;
   Balance balance{psc_params.balance_interval, 3};
 
   // -- Sort
-  psc_params.sort_interval = 10;
+  psc_params.sort_interval = 1;
 
   // -- Collision
-  int collision_interval = 10;
+  int collision_interval = 1;
   double collision_nu =
     3.76 * std::pow(g.target_Te_heat, 2.) / g.Zi / g.lambda0;
   Collision collision{grid, collision_interval, collision_nu};
 
   // -- Checks
   ChecksParams checks_params{};
-  checks_params.continuity_every_step = 0;
-  checks_params.continuity_threshold = 1e-4;
+  checks_params.continuity_every_step = -1;
+  checks_params.continuity_threshold = 1e-3;
   checks_params.continuity_verbose = true;
   checks_params.continuity_dump_always = false;
-  checks_params.gauss_every_step = 100;
-  checks_params.gauss_threshold = 1e-4;
+  checks_params.gauss_every_step = -1;
+  checks_params.gauss_threshold = 1e-3;
   checks_params.gauss_verbose = true;
   checks_params.gauss_dump_always = false;
   Checks checks{grid, MPI_COMM_WORLD, checks_params};
@@ -389,7 +400,7 @@ void run()
   double marder_diffusion = 0.9;
   int marder_loop = 3;
   bool marder_dump = false;
-  psc_params.marder_interval = 100;
+  psc_params.marder_interval = 1;
   Marder marder(grid, marder_diffusion, marder_loop, marder_dump);
 
   // ----------------------------------------------------------------------
@@ -399,10 +410,10 @@ void run()
 
   // -- output fields
   OutputFieldsParams outf_params{};
-  outf_params.pfield_interval = 500;
-  outf_params.tfield_interval = 500;
-  outf_params.tfield_average_every = 50;
-  outf_params.tfield_moments_average_every = 50;
+  outf_params.pfield_interval = -1000;
+  outf_params.tfield_interval = -6;
+  outf_params.tfield_average_every = -2;
+  outf_params.tfield_moments_average_every = -2;
   OutputFields outf{grid, outf_params};
 
   // -- output particles
@@ -431,7 +442,7 @@ void run()
   heating_foil_params.Mi = grid.kinds[MY_ION].m;
   HeatingSpotFoil heating_spot{grid, heating_foil_params};
 
-  g.heating_interval = 20;
+  g.heating_interval = 1;
   g.heating_begin = 0;
   g.heating_end = 10000000;
   auto& heating =
@@ -451,7 +462,7 @@ void run()
   inject_foil_params.Ti = .001;
   InjectFoil inject_target{inject_foil_params};
 
-  g.inject_interval = 20;
+  g.inject_interval = 1;
   int inject_tau = 40;
 
   SetupParticles<Mparticles> setup_particles(grid);
@@ -482,6 +493,7 @@ void run()
     if (timestep >= g.heating_begin && timestep < g.heating_end &&
         g.heating_interval > 0 && timestep % g.heating_interval == 0) {
       mpi_printf(comm, "***** Performing heating...\n");
+      MPI_Barrier(MPI_COMM_WORLD); 
       prof_start(pr_heating);
       heating(mprts);
       prof_stop(pr_heating);
@@ -513,7 +525,10 @@ void run()
 int main(int argc, char** argv)
 {
   psc_init(argc, argv);
-
+#ifdef HAVE_RMM
+  pool_mr = new rmm::mr::cnmem_memory_resource{(1<<30)}; 
+  rmm::mr::set_default_resource(pool_mr);
+#endif
   run();
 
   psc_finalize();
