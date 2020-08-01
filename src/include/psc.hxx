@@ -207,9 +207,9 @@ struct Psc
                  grid().timestep() + 1, p_.nmax, grid().timestep() * grid().dt,
                  MPI_Wtime() - time_start_);
 
-      // prof_start(pr_time_step_no_comm);
-      // prof_stop(
-      //   pr_time_step_no_comm); // actual measurements are done w/ restart
+      //prof_start(pr_time_step_no_comm);
+      //prof_stop(
+      //  pr_time_step_no_comm); // actual measurements are done w/ restart
 
       step();
       grid_->timestep_++; // FIXME, too hacky
@@ -285,8 +285,13 @@ struct Psc
       balance_(grid_, mprts_);
     }
 
+<<<<<<< Updated upstream
     // prof_start(pr_time_step_no_comm);
     // prof_stop(pr_time_step_no_comm); // actual measurements are done w/ restart
+=======
+    //prof_start(pr_time_step_no_comm);
+    //prof_stop(pr_time_step_no_comm); // actual measurements are done w/ restart
+>>>>>>> Stashed changes
 
     if (p_.sort_interval > 0 && timestep % p_.sort_interval == 0) {
       // mpi_printf(comm, "***** Sorting...\n");
@@ -385,7 +390,7 @@ struct Psc
     using Dim = typename PscConfig::Dim;
 
     static int pr_sort, pr_collision, pr_checks, pr_push_prts, pr_push_flds,
-      pr_bndp, pr_bndf, pr_marder, pr_inject_prts;
+      pr_bndp, pr_bndf, pr_marder, pr_inject_prts, pr_bndf_barrier;
     if (!pr_sort) {
       pr_sort = prof_register("step_sort", 1., 0, 0);
       pr_collision = prof_register("step_collision", 1., 0, 0);
@@ -396,6 +401,7 @@ struct Psc
       pr_bndf = prof_register("step_bnd_flds", 1., 0, 0);
       pr_checks = prof_register("step_checks", 1., 0, 0);
       pr_marder = prof_register("step_marder", 1., 0, 0);
+      pr_bndf_barrier = prof_register("bndf_barrier", 1., 0, 0);
     }
 
     // state is at: x^{n+1/2}, p^{n}, E^{n+1/2}, B^{n+1/2}
@@ -433,12 +439,14 @@ struct Psc
       prof_stop(pr_checks);
     }
 
+    MPI_Barrier(MPI_COMM_WORLD); 
     // === particle propagation p^{n} -> p^{n+1}, x^{n+1/2} -> x^{n+3/2}
     prof_start(pr_push_prts);
     pushp_.push_mprts(mprts_, mflds_);
     prof_stop(pr_push_prts);
     // state is now: x^{n+3/2}, p^{n+1}, E^{n+1/2}, B^{n+1/2}, j^{n+1}
 
+    MPI_Barrier(MPI_COMM_WORLD); 
     // === field propagation B^{n+1/2} -> B^{n+1}
     prof_start(pr_push_flds);
     pushf_.push_H(mflds_, .5, Dim{});
@@ -450,6 +458,11 @@ struct Psc
     prof_stop(pr_bndp);
 
     // === field propagation E^{n+1/2} -> E^{n+3/2}
+    prof_start(pr_bndf_barrier);
+    MPI_Barrier(MPI_COMM_WORLD);
+    prof_stop(pr_bndf_barrier);    
+
+
     prof_start(pr_bndf);
 #if 1
     bndf_.fill_ghosts_H(mflds_);

@@ -10,7 +10,7 @@
 #include "psc_bits.h"
 #include "cuda_bits.h"
 
-#include <thrust/device_vector.h>
+//#include <thrust/device_vector.h>
 #include <thrust/sort.h>
 #include <thrust/binary_search.h>
 
@@ -130,7 +130,7 @@ struct MparticlesCudaStorage_
 // ======================================================================
 // MparticlesCudaStorage
 
-using MparticlesCudaStorage = MparticlesCudaStorage_<thrust::device_vector<float4>>;
+using MparticlesCudaStorage = MparticlesCudaStorage_<device_vector<float4>>;
 
 // ======================================================================
 // HMparticlesCudaStorage
@@ -242,9 +242,9 @@ private:
   
 public:
   void reorder();
-  void reorder(const thrust::device_vector<uint>& d_id);
-  void reorder_and_offsets(const thrust::device_vector<uint>& d_idx, const thrust::device_vector<uint>& d_id,
-			   thrust::device_vector<uint>& d_off);
+  void reorder(const device_vector<uint>& d_id);
+  void reorder_and_offsets(const device_vector<uint>& d_idx, const device_vector<uint>& d_id,
+			   device_vector<uint>& d_off);
   void reorder_and_offsets_slow();
   void swap_alt();
 

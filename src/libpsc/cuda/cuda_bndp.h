@@ -10,7 +10,6 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/partition.h>
-
 // ----------------------------------------------------------------------
 // cuda_bndp
 
@@ -33,6 +32,7 @@ struct cuda_bndp : cuda_mparticles_indexer<typename CudaMparticles::BS>
     bufs.resize(n_patches());
     n_sends.resize(n_patches());
     n_recvs.resize(n_patches());
+
   }
 
   // ----------------------------------------------------------------------
@@ -56,9 +56,10 @@ struct cuda_bndp : cuda_mparticles_indexer<typename CudaMparticles::BS>
     auto begin = thrust::make_zip_iterator(thrust::make_tuple(
       d_bidx.begin(), cmprts.storage.xi4.begin(), cmprts.storage.pxi4.begin()));
     auto end = begin + sz;
-
     auto oob_end =
-      thrust::copy_if(begin, end, begin + sz, is_outside(cmprts.n_blocks));
+      thrust::copy_if(begin,
+                      end,
+                      begin + sz, is_outside(cmprts.n_blocks) );
     assert(oob_end == begin + sz + oob);
 
     n_prts_send = oob;
@@ -178,12 +179,12 @@ struct cuda_bndp<CudaMparticles, dim_yz>
   void scan_scatter_received_gold(CudaMparticles* cmprts, uint n_prts_recv);
   void update_offsets_gold(CudaMparticles* cmprts);
 
-  thrust::device_vector<uint> d_spine_cnts;
-  thrust::device_vector<uint> d_spine_sums;
+  device_vector<uint> d_spine_cnts;
+  device_vector<uint> d_spine_sums;
   uint n_prts_send;
-  thrust::device_vector<uint> d_bnd_off;
+  device_vector<uint> d_bnd_off;
 
-  thrust::device_vector<uint>
+  device_vector<uint>
     d_sums; // FIXME, should go away (only used in some gold stuff)
 
   BndBuffers bufs;

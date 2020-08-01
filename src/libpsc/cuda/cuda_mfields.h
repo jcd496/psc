@@ -1,7 +1,7 @@
 
 #ifndef CUDA_MFIELDS_H
 #define CUDA_MFIELDS_H
-
+#include "cuda_bits.h"
 #include "cuda_iface.h"
 #include "cuda_iface_bnd.h"
 #include "cuda_base.cuh"
@@ -13,8 +13,7 @@
 #define MAX_BND_FIELDS (17)
 #define MAX_BND_COMPONENTS (3)
 
-#include <thrust/device_vector.h>
-
+//#include <thrust/device_vector.h>
 // ----------------------------------------------------------------------
 // cuda_mfields_bnd_map
 //
@@ -30,6 +29,7 @@ struct cuda_mfields_bnd_map {
   int nr_map_in; // number of entries in the map
 };
 
+
 // ----------------------------------------------------------------------
 // cuda_mfields_bnd
 
@@ -38,7 +38,7 @@ struct cuda_mfields_bnd {
   int im[3];
   int ib[3];
   struct cuda_mfields_bnd_patch *bnd_by_patch;
-  thrust::device_vector<fields_cuda_real_t> d_buf;
+  device_vector<fields_cuda_real_t> d_buf;
   thrust::host_vector<fields_cuda_real_t> h_buf;
   int *h_nei_patch;
   int *d_nei_patch;
@@ -105,7 +105,7 @@ using DFields = DMFields::fields_view_t;
 // ======================================================================
 // cuda_mfields
 
-using MfieldsStorageDeviceVector = thrust::device_vector<float>;
+using MfieldsStorageDeviceVector = device_vector<float>;
 
 struct cuda_mfields : CudaMfields<MfieldsStorageDeviceVector>
 {

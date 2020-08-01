@@ -285,6 +285,15 @@ inline void ddc_particles<MP>::comm(BndBuffers& bufs)
   int sz = sizeof(Particle) / sizeof(real_t);
   int dir[3];
 
+  static int pr_A, pr_B, pr_C, pr_D, pr_E;
+  if (!pr_B) {
+    pr_A = prof_register("local_prt", 1., 0, 0);
+    pr_B = prof_register("remote_prt", 1., 0, 0);
+    pr_C = prof_register("post_Irecv", 1., 0, 0);
+    pr_D = prof_register("copy_buff", 1., 0, 0);
+    pr_E = prof_register("MPI_Waitall", 1., 0, 0);
+  }
+
   for (int r = 0; r < n_ranks; r++) {
     MPI_Irecv(cinfo_[r].recv_cnts.data(), cinfo_[r].n_recv_entries,
 	      MPI_INT, cinfo_[r].rank, 222, comm, &recv_reqs_[r]);
@@ -305,6 +314,7 @@ inline void ddc_particles<MP>::comm(BndBuffers& bufs)
   }  
 
   // overlap: count local # particles
+  prof_start(pr_A);
   for (int p = 0; p < nr_patches; p++) {
     patch *patch = &patches_[p];
     patch->n_recv = 0;
@@ -324,7 +334,7 @@ inline void ddc_particles<MP>::comm(BndBuffers& bufs)
       }
     }
   }
-
+  prof_stop(pr_A);
 #if 0
   // still want to figure out how to avoid sending info i can calc
   // just need to fix order
@@ -344,13 +354,14 @@ inline void ddc_particles<MP>::comm(BndBuffers& bufs)
     }
   }
 #endif
-
+  prof_start(pr_E);
   MPI_Waitall(n_ranks, recv_reqs_.data(), MPI_STATUSES_IGNORE);
   MPI_Waitall(n_ranks, send_reqs_.data(), MPI_STATUSES_IGNORE);
-
+  prof_stop(pr_E);
   auto mpi_dtype = MpiDtypeTraits<typename Mparticles::real_t>::value();
 
   // add remote # particles
+  prof_start(pr_B);
   int n_send = 0, n_recv = 0;
 
   for (int r = 0; r < n_ranks; r++) {
@@ -364,7 +375,7 @@ inline void ddc_particles<MP>::comm(BndBuffers& bufs)
     n_send += cinfo_[r].n_send;
     n_recv += cinfo_[r].n_recv;
   }
-
+  prof_stop(pr_B);
   // post sends
   Buffer send_buf;
   send_buf.resize(n_send);
@@ -385,7 +396,7 @@ inline void ddc_particles<MP>::comm(BndBuffers& bufs)
 	      cinfo_[r].rank, 1, comm, &send_reqs_[r]);
   }
   assert(it == send_buf.begin() + n_send);
-
+  prof_start(pr_C);
   // post receives
   Buffer recv_buf;
   recv_buf.resize(n_recv);
@@ -398,6 +409,7 @@ inline void ddc_particles<MP>::comm(BndBuffers& bufs)
 	      cinfo_[r].rank, 1, comm, &recv_reqs_[r]);
     it += cinfo_[r].n_recv;
   }
+  prof_stop(pr_C);
   assert(it == recv_buf.begin() + n_recv);
 
   // leave room for receives (FIXME? just change order)
@@ -419,7 +431,7 @@ inline void ddc_particles<MP>::comm(BndBuffers& bufs)
     it_recv[p] = buf.end();
     buf.resize(size + patch->n_recv);
   }
-
+  prof_start(pr_D);
   // overlap: copy particles from local proc to the end of recv range
   for (int p = 0; p < nr_patches; p++) {
     patch *patch = &patches_[p];
@@ -445,7 +457,6 @@ inline void ddc_particles<MP>::comm(BndBuffers& bufs)
 
   MPI_Waitall(n_ranks, recv_reqs_.data(), MPI_STATUSES_IGNORE);
   MPI_Waitall(n_ranks, send_reqs_.data(), MPI_STATUSES_IGNORE);
-
   // copy received particles into right place
 
   it = recv_buf.begin();
@@ -459,6 +470,7 @@ inline void ddc_particles<MP>::comm(BndBuffers& bufs)
   }
   assert(it == recv_buf.begin() + n_recv);
 
+  prof_stop(pr_D);
   for (int p = 0; p < nr_patches; p++) {
     BndBuffer& buf = bufs[p];
     assert(it_recv[p] == buf.end());

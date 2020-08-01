@@ -5,12 +5,14 @@
 #include "rng_state.cuh"
 
 #include <thrust/binary_search.h>
-#include <thrust/device_vector.h>
+//#include <thrust/device_vector.h>
 #include <thrust/random.h>
 #include <thrust/sort.h>
 
 #include <curand_kernel.h>
-
+#ifdef HAVE_RMM
+#include "rmm/thrust_rmm_allocator.h"
+#endif
 template <typename BS>
 struct cuda_mparticles;
 
@@ -43,8 +45,8 @@ __global__ static void k_find_cell_indices_ids(DMparticlesCuda<BS> dmprts,
 
 template <typename BS>
 inline void find_cell_indices_ids(cuda_mparticles<BS>& cmprts,
-                                  thrust::device_vector<uint>& d_cidx,
-                                  thrust::device_vector<uint>& d_id)
+                                  device_vector<uint>& d_cidx,
+                                  device_vector<uint>& d_id)
 {
   if (cmprts.n_patches() == 0) {
     return;
@@ -127,8 +129,8 @@ __global__ static void k_find_block_indices_ids(DMparticlesCuda<BS> dmprts,
 
 template <typename BS>
 inline void find_block_indices_ids(cuda_mparticles<BS>& cmprts,
-                                   thrust::device_vector<uint>& d_idx,
-                                   thrust::device_vector<uint>& d_id)
+                                   device_vector<uint>& d_idx,
+                                   device_vector<uint>& d_id)
 {
   if (cmprts.n_patches() == 0) {
     return;
@@ -180,7 +182,7 @@ struct cuda_mparticles_sort
 
   void stable_sort_cidx()
   {
-    thrust::stable_sort_by_key(d_idx.begin(), d_idx.end(), d_id.begin());
+    thrust::stable_sort_by_key(rmm::exec_policy(0)->on(0), d_idx.begin(), d_idx.end(), d_id.begin());
   }
 
   void find_offsets()
@@ -199,9 +201,9 @@ struct cuda_mparticles_sort
   }
 
 public:
-  thrust::device_vector<uint> d_idx; // cell index (incl patch) per particle
-  thrust::device_vector<uint> d_id;  // particle id used for reordering
-  thrust::device_vector<uint>
+  device_vector<uint> d_idx; // cell index (incl patch) per particle
+  device_vector<uint> d_id;  // particle id used for reordering
+  device_vector<uint>
     d_off; // particles per cell
            // are at indices [offsets[cell] .. offsets[cell+1][
 };
@@ -255,7 +257,7 @@ struct cuda_mparticles_randomize_sort
 
   void sort()
   {
-    thrust::sort_by_key(d_random_idx.begin(), d_random_idx.end(), d_id.begin());
+    thrust::sort_by_key(rmm::exec_policy(0)->on(0), d_random_idx.begin(), d_random_idx.end(), d_id.begin());
   }
 
   void find_offsets()
@@ -268,9 +270,9 @@ struct cuda_mparticles_randomize_sort
   }
 
 public:
-  thrust::device_vector<double> d_random_idx; // randomized cell index
-  thrust::device_vector<uint> d_id;          // particle id used for reordering
-  thrust::device_vector<uint>
+  device_vector<double> d_random_idx; // randomized cell index
+  device_vector<uint> d_id;          // particle id used for reordering
+  device_vector<uint>
     d_off; // particles per cell
            // are at indices [offsets[cell] .. offsets[cell+1][
   RngStateCuda rng_state_;
@@ -295,7 +297,7 @@ struct cuda_mparticles_sort_by_block
 
   void stable_sort()
   {
-    thrust::stable_sort_by_key(d_idx.begin(), d_idx.end(), d_id.begin());
+    thrust::stable_sort_by_key(rmm::exec_policy(0)->on(0), d_idx.begin(), d_idx.end(), d_id.begin());
   }
 
   void find_offsets()
@@ -325,9 +327,9 @@ struct cuda_mparticles_sort_by_block
   }
 
 public:
-  thrust::device_vector<uint> d_idx; // block index (incl patch) per particle
-  thrust::device_vector<uint> d_id;  // particle id used for reordering
-  thrust::device_vector<uint>
+  device_vector<uint> d_idx; // block index (incl patch) per particle
+  device_vector<uint> d_id;  // particle id used for reordering
+  device_vector<uint>
     d_off; // particles per cell
            // are at indices [offsets[block] .. offsets[block+1][
 };

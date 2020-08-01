@@ -10,8 +10,14 @@ template<typename MF>
 BndCuda3<MF>::BndCuda3(const Grid_t& grid, const int ibn[3])
 {
   if (!cbnd_) {
+    static int pr;
+    if(!pr){
+        pr = prof_register("cuda_bncdcuda3_ctor", 1., 0, 0);
+    }
+    prof_start(pr);
     cbnd_ = new CudaBnd{grid, Int3::fromPointer(ibn)};
     balance_generation_cnt_ = psc_balance_generation_cnt;
+    prof_stop(pr);
   }
 }
 

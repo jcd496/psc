@@ -7,7 +7,7 @@
 #include "binary_collision.hxx" // for Rng, FIXME
 #include "cuda_bits.h"
 
-#include <thrust/device_vector.h>
+//#include <thrust/device_vector.h>
 
 // ======================================================================
 // RngStateFake
@@ -85,7 +85,7 @@ public:
   int size() { return rngs_.size(); }
 
 private:
-  thrust::device_vector<Rng> rngs_;
+  device_vector<Rng> rngs_;
 };
 
 // ----------------------------------------------------------------------

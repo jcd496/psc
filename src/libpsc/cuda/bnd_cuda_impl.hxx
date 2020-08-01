@@ -92,8 +92,14 @@ struct BndCuda : BndBase
 
   void add_ghosts(Mfields& mflds, int mb, int me)
   {
+   
+    static int pr;
+    if(!pr){
+        pr = prof_register("cuda_add_ghosts", 1., 0, 0);
+    }
+    prof_start(pr);
     const auto& grid = mflds.grid();
-
+   
     int size;
     MPI_Comm_size(mrc_ddc_comm(ddc_), &size);
     if (size == 1 && mflds.n_patches() == 1 && // FIXME !!!
@@ -122,7 +128,8 @@ struct BndCuda : BndBase
 	}
       }
 #endif
-      cuda_mfields_bnd_to_device_inside(cbnd, mflds.cmflds(), mb, me);
+     cuda_mfields_bnd_to_device_inside(cbnd, mflds.cmflds(), mb, me);
+     prof_stop(pr);
     }
   }
 

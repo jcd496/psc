@@ -37,7 +37,7 @@ extern struct prof_globals {
 
 #include <sys/time.h>
 #include <stdlib.h>
-
+#include <nvToolsExt.h>
 static inline void
 prof_start(int pr)
 {
@@ -75,7 +75,6 @@ prof_stop(int pr)
   prof_globals.info[pr].cnt++;
   nvtxRangePop();
 }
-
 #ifdef __cplusplus
 #define EXTERN_C extern "C"
 #else
@@ -87,5 +86,4 @@ EXTERN_C int  prof_register(const char *name, float simd, int flops, int bytes);
 EXTERN_C void prof_print(void);
 EXTERN_C void prof_print_file(FILE *f);
 EXTERN_C void prof_print_mpi(MPI_Comm comm);
-
 #endif

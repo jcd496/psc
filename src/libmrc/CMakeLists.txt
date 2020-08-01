@@ -53,6 +53,8 @@ target_compile_features(mrc
   PRIVATE
     c_std_99
 )
+target_include_directories(mrc PUBLIC ${CUDA_NVTOOLS_EXT_INCLUDE})
+target_link_libraries(mrc PUBLIC ${CUDA_NVTOOLS_EXT_LIBRARIES})
 
 target_include_directories(mrc PUBLIC ${CUDA_NVTOOLS_EXT_INCLUDE})
 target_link_libraries(mrc PUBLIC ${CUDA_NVTOOLS_EXT_LIBRARIES})

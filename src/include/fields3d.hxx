@@ -7,7 +7,6 @@
 #include "grid.hxx"
 #include <kg/SArrayView.h>
 
-#include <mrc_profile.h>
 
 #include <type_traits>
 #include <cstdlib>
@@ -18,6 +17,9 @@
 #include <typeindex>
 #include <list>
 #include <string>
+
+
+#include <mrc_profile.h>
 
 template <typename Derived>
 class MFexpression
@@ -334,12 +336,15 @@ public:
   template <typename E>
   Derived& operator+=(const MFexpression<E>& xp)
   {
+
     const auto& rhs = xp.derived();
     assert(n_comps() == rhs.n_comps());
     assert(n_patches() == rhs.n_patches());
     //assert(box() == rhs.box());
     assert(derived().ibn() == rhs.ibn());
     // FIXME check size compat, too
+
+
     for (int p = 0; p < n_patches(); p++) {
       for (int m = 0; m < n_comps(); m++) {
 	Int3 ijk;

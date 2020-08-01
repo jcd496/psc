@@ -37,14 +37,30 @@ struct Inject_ : InjectBase
 
   void operator()(Mparticles& mprts)
   {
+    static int pr, pr_a, pr_b, pr_c, pr_d, pr_e, pr_f;
+    if(!pr){
+      pr = prof_register("inject_get_as", 1., 0, 0);
+      pr_a = prof_register("inject_init_npt", 1., 0, 0);
+      pr_b = prof_register("inject_setup_particles", 1., 0, 0);
+      pr_c = prof_register("inject_put_as", 1., 0, 0);
+      pr_d = prof_register("inject_grid", 1., 0, 0);
+      pr_e = prof_register("inject_moment", 1., 0, 0);
+      pr_f = prof_register("inject_evalMfields", 1., 0, 0);
+    }
+    prof_start(pr_d);
     const auto& grid = mprts.grid();
-
+    prof_stop(pr_d);
+    prof_start(pr_e);
     ItemMoment_t moment_n(mprts);
+    prof_stop(pr_e);
+    prof_start(pr_f);
     auto mres = evalMfields(moment_n);
+    prof_stop(pr_f);
+    prof_start(pr);
     auto& mf_n = mres.template get_as<Mfields>(kind_n, kind_n + 1);
-
+    prof_stop(pr);
     real_t fac = (interval * grid.dt / tau) / (1. + interval * grid.dt / tau);
-
+    prof_start(pr_a);
     auto lf_init_npt = [&](int kind, Double3 pos, int p, Int3 idx,
                            psc_particle_npt& npt) {
       if (target_.is_inside(pos)) {
@@ -56,10 +72,14 @@ struct Inject_ : InjectBase
         npt.n *= fac;
       }
     };
-
+    prof_stop(pr_a);
+    prof_start(pr_b);
     setup_particles_.setupParticles(mprts, lf_init_npt);
-
+    prof_stop(pr_b);
+    MPI_Barrier(MPI_COMM_WORLD); 
+    prof_start(pr_c);
     mres.put_as(mf_n, 0, 0);
+    prof_stop(pr_c);
   }
 
 private:

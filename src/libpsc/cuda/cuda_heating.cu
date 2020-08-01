@@ -10,7 +10,7 @@
 #include "balance.hxx"
 
 #include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
+//#include <thrust/device_vector.h>
 
 #include <curand_kernel.h>
 

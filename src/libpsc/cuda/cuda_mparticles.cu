@@ -6,7 +6,7 @@
 #include "bs.hxx"
 
 #include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
+//#include <thrust/device_vector.h>
 #include <thrust/sort.h>
 
 #include "cuda_base.cuh"
@@ -145,9 +145,9 @@ k_reorder_and_offsets(DMparticlesCuda<BS> dmprts, int nr_prts,
 // reorder_and_offsets
 
 template<typename BS>
-void cuda_mparticles<BS>::reorder_and_offsets(const thrust::device_vector<uint>& d_idx,
-					      const thrust::device_vector<uint>& d_id,
-					      thrust::device_vector<uint>& d_off)
+void cuda_mparticles<BS>::reorder_and_offsets(const device_vector<uint>& d_idx,
+					      const device_vector<uint>& d_id,
+					      device_vector<uint>& d_off)
 {
   if (this->n_patches() == 0) {
     return;
@@ -205,7 +205,7 @@ void cuda_mparticles<BS>::reorder()
 // reorder
 
 template<typename BS>
-void cuda_mparticles<BS>::reorder(const thrust::device_vector<uint>& d_id)
+void cuda_mparticles<BS>::reorder(const device_vector<uint>& d_id)
 {
   if (this->n_prts == 0) {
     return;

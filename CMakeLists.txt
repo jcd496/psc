@@ -38,10 +38,10 @@ if(USE_CUDA)
 
   set(CMAKE_CUDA_FLAGS "${_save_CMAKE_CUDA_FLAGS}")
 
-  set(CUDA_NVTOOLS_EXT_INCLUDE "/usr/local/cuda/include" CACHE STRING "Location of nvToolsExt.h")
-  set(CUDA_NVTOOLS_EXT_LIBRARIES "-lnvToolsExt" CACHE STRING "Location of libNvToolsExt.")
 
   find_package(RMM)
+  set(CUDA_NVTOOLS_EXT_INCLUDE "${CPATH}" CACHE STRING "Location of nvToolsExt.h")
+  set(CUDA_NVTOOLS_EXT_LIBRARIES "-lnvToolsExt" CACHE STRING "Location of nvToolsExt.h")
 endif()
 
 set(MPI_CXX_SKIP_MPICXX ON)

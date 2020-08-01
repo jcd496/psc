@@ -3,13 +3,13 @@
 #define CUDA_BITS_H
 
 
-#include <thrust/device_vector.h>
 #ifdef HAVE_RMM
 #include "rmm/thrust_rmm_allocator.h"
 
 template <typename T>
 using device_vector = thrust::device_vector<T, rmm::mr::thrust_allocator<T>>;
 #else
+#include <thrust/device_vector.h>
 template <typename T>
 using device_vector = thrust::device_vector<T>;
 #endif

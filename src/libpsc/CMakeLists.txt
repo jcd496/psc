@@ -65,6 +65,9 @@ if (USE_CUDA)
     target_compile_definitions(psc PUBLIC HAVE_RMM)
     target_link_libraries(psc PUBLIC RMM::RMM)
   endif()
+  target_include_directories(psc PUBLIC ${CUDA_NVTOOLS_EXT_INCLUDE})
+  target_link_libraries(psc PUBLIC ${CUDA_NVTOOLS_EXT_LIBRARIES})
+    
 endif()
 
 if (USE_VPIC)

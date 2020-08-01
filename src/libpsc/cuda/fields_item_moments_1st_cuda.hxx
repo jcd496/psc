@@ -79,6 +79,11 @@ public:
     : Base{mprts.grid()},
       bnd_{mprts.grid(), mprts.grid().ibn}
   {
+    static int pr;
+    if(!pr){
+        pr = prof_register("cuda_moment_n_1st_ctor", 1., 0, 0);
+    }
+    prof_start(pr);
     auto& _mprts = const_cast<Mparticles&>(mprts);
     auto& cmprts = *_mprts.cmprts();
     cuda_mfields *cmres = Base::mres_.cmflds();
@@ -87,6 +92,7 @@ public:
     CudaMoments1stNcN<cuda_mparticles<typename Mparticles::BS>, dim> cmoments;
     cmoments(cmprts, cmres);
     bnd_.add_ghosts(Base::mres_, 0, Base::mres_.n_comps());
+    prof_stop(pr);
   }
 
   const Mfields& result() const { return Base::mres_; }

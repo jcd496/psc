@@ -1,6 +1,5 @@
-
 #pragma once
-
+#include <omp.h>
 struct psc_particle_npt
 {
   int kind;    ///< particle kind
@@ -112,6 +111,7 @@ struct SetupParticles
     // mprts.reserve_all(n_prts_by_patch); FIXME
 
     auto inj = mprts.injector();
+    #pragma omp parallel for shared(grid, inj, mprts, init_npt)
     for (int p = 0; p < mprts.n_patches(); ++p) {
       auto ldims = grid.ldims;
       auto injector = inj[p];

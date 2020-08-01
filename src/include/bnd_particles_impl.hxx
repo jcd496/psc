@@ -63,7 +63,8 @@ struct BndParticlesCommon : BndParticlesBase
       pr_C = prof_register("xchg_comm", 1., 0, 0);
     }
   
-    // prof_restart(pr_time_step_no_comm);
+    MPI_Barrier(MPI_COMM_WORLD); 
+    //prof_restart(pr_time_step_no_comm);
     prof_start(pr_B);
 #pragma omp parallel for
     for (int p = 0; p < ddcp->nr_patches; p++) {
@@ -72,8 +73,9 @@ struct BndParticlesCommon : BndParticlesBase
       if (psc_balance_comp_time_by_patch) psc_balance_comp_time_by_patch[p] += MPI_Wtime();
     }
     prof_stop(pr_B);
-    // prof_stop(pr_time_step_no_comm);
     
+    //prof_stop(pr_time_step_no_comm);
+    MPI_Barrier(MPI_COMM_WORLD); 
     prof_start(pr_C);
     ddcp->comm(bufs);
     prof_stop(pr_C);

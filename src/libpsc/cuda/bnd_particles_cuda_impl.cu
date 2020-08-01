@@ -1,7 +1,6 @@
 
 #include "bnd_particles_cuda_impl.hxx"
 #include "cuda_bndp.h"
-
 // ----------------------------------------------------------------------
 // ctor
 
@@ -48,18 +47,19 @@ void BndParticlesCuda<Mparticles, DIM>::operator()(Mparticles& mprts)
     pr_B = prof_register("xchg_mprts_post", 1., 0, 0);
   }
   
-  // prof_restart(pr_time_step_no_comm);
+  MPI_Barrier(MPI_COMM_WORLD); 
+  //prof_restart(pr_time_step_no_comm);
   prof_start(pr_A);
   auto&& bufs = cbndp_->prep(mprts.cmprts());
   prof_stop(pr_A);
   
   this->process_and_exchange(mprts, bufs);
   
-  // prof_restart(pr_time_step_no_comm);
+  //prof_restart(pr_time_step_no_comm);
   prof_start(pr_B);
   cbndp_->post(mprts.cmprts());
   prof_stop(pr_B);
-  // prof_stop(pr_time_step_no_comm);
+  //prof_stop(pr_time_step_no_comm);
 }
 
 template struct BndParticlesCuda<MparticlesCuda<BS144>, dim_yz>;

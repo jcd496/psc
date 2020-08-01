@@ -4,6 +4,9 @@
 #include <cuda_bits.h>
 #include <mrc_common.h>
 
+#ifdef HAVE_RMM
+#include "rmm/thrust_rmm_allocator.h"
+#endif
 void
 cuda_base_init(void)
 {
@@ -79,8 +82,11 @@ cuda_base_init(void)
 	   deviceProp.computeMode == cudaComputeModeProhibited ?
 	   "Prohibited (no host thread can use this device)" :
 	   "Unknown");
+
 #endif
+
   }
+
 }
 
 // ----------------------------------------------------------------------

@@ -118,6 +118,7 @@ cuda_mfields_bnd_dtor(struct cuda_mfields_bnd *cbnd)
     myCudaFree(map->d_map_in);
     delete[] map->h_map_out;
     delete[] map->h_map_in;
+     
   }
 
   for (int p = 0; p < cbnd->n_patches; p++) {
@@ -440,7 +441,7 @@ cuda_mfields_bnd_fill_ghosts_local_xyz(struct cuda_mfields_bnd *cbnd, struct cud
     (im[0] - 2*B) * (im[1] - 2*B) * (im[2] - 2*B);
   int n_threads = n_ghosts * n_patches;
 
-#if 0
+#if 0 
   dim3 dimGrid((n_threads + (THREADS_PER_BLOCK - 1)) / THREADS_PER_BLOCK);
   dim3 dimBlock(THREADS_PER_BLOCK);
     
@@ -509,7 +510,7 @@ cuda_mfields_bnd_fill_ghosts_local(struct cuda_mfields_bnd *cbnd, struct cuda_mf
   for (int tid = 0; tid < n_threads; tid++) {
     cuda_fill_ghosts_local_gold(&h_flds[0], cbnd->d_nei_patch, mb, me, im, n_fields, 
 				n_patches, n_ghosts, tid);
-  }
+  }`
   
   thrust::copy(h_flds.begin(), h_flds.end(), d_flds);
 #endif
@@ -920,12 +921,12 @@ k_fields_device_pack3_yz(float *d_buf, float *d_flds, int *d_map, int *d_nei_pat
 
 #undef _GLIBCXX_USE_INT128
 
-#include <thrust/device_vector.h>
+//#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
 static void
 fields_create_map_out_yz(struct cuda_mfields_bnd *cbnd, int n_fields,
-			 int B, int *p_nr_map, int **p_h_map)
+			 int B, int *p_nr_map, int** p_h_map)
 {
   bool remote_only = true;
   int *im = cbnd->im;
@@ -1145,15 +1146,18 @@ cuda_mfields_bnd_setup_map(struct cuda_mfields_bnd *cbnd, int n_fields,
 		    map->nr_map_out * sizeof(*map->d_map_out),
 		    cudaMemcpyHostToDevice); cudaCheck(ierr);
   
+  map->d_map_out = map->h_map_out;
   fields_create_map_in_yz(cbnd, n_fields, 2, &map->nr_map_in, &map->h_map_in);
   //printf("map_in %d\n", map->nr_map_in);
-  
+ 
   map->d_map_in = (int*) myCudaMalloc(map->nr_map_in * sizeof(*map->d_map_in));
   ierr = cudaMemcpy(map->d_map_in, map->h_map_in, 
 		    map->nr_map_in * sizeof(*map->d_map_in),
 		    cudaMemcpyHostToDevice); cudaCheck(ierr);
-}
+ 
 
+}
+ 
 template<int B, bool pack>
 static void
 fields_device_pack3_yz(struct cuda_mfields *cmflds, struct cuda_mfields_bnd *cbnd,

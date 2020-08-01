@@ -92,8 +92,15 @@ public:
       return;
     }
 
+    static int pr_ckp;
+    if (!pr_ckp) {
+      pr_ckp = prof_register("checkpoint_write", 1., 0, 0);
+    }
+
     if (grid.timestep() % interval_ == 0) {
+      prof_start(pr_ckp);
       write_checkpoint(grid, mprts, mflds);
+      prof_stop(pr_ckp);
     }
   }
 
