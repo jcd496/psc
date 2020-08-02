@@ -44,6 +44,10 @@ add_library(mrc ${LIBMRC_SOURCES})
 target_include_directories(mrc
   PUBLIC include .
 )
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(mrc PUBLIC OpenMP::OpenMP_CXX)
+endif()
 target_link_libraries(mrc
   PUBLIC
     MPI::MPI_C

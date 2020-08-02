@@ -16,3 +16,5 @@ add_psc_executable(psc_harris_xz)
 
 add_executable(cuda_test cuda_test.cu)
 target_link_libraries(cuda_test psc)
+add_executable(a.out test.cxx)
+target_link_libraries(a.out psc)

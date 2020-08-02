@@ -20,6 +20,11 @@ add_library(psc
   vpic/psc_vpic_bits.cxx
   vpic/vpic_base.cxx
   )
+
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(psc PUBLIC OpenMP::OpenMP_CXX)
+endif()
 target_include_directories(psc PUBLIC ../include)
 target_link_libraries(psc PUBLIC kg mrc)
 target_link_libraries(psc PUBLIC kg MPI::MPI_CXX)
@@ -69,6 +74,8 @@ if (USE_CUDA)
   target_link_libraries(psc PUBLIC ${CUDA_NVTOOLS_EXT_LIBRARIES})
     
 endif()
+
+
 
 if (USE_VPIC)
   add_library(VPIC::VPIC INTERFACE IMPORTED)

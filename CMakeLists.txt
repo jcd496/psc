@@ -53,6 +53,14 @@ foreach(lang IN ITEMS CXX C)
   unset(tmp)
 endforeach()
 
+
+find_package(OpenMP REQUIRED)
+foreach(lang IN ITEMS CXX C)
+  get_property(tmp TARGET OpenMP::OpenMP_${lang} PROPERTY INTERFACE_COMPILE_OPTIONS)
+  list(TRANSFORM tmp REPLACE "-fexceptions" "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler >-fexceptions")
+  set_property(TARGET OpenMP::OpenMP_${lang} PROPERTY INTERFACE_COMPILE_OPTIONS "${tmp}")
+  unset(tmp)
+endforeach()
 # ADIOS2
 if(PSC_USE_ADIOS2 STREQUAL AUTO)
   find_package(ADIOS2)
@@ -62,8 +70,11 @@ endif()
 if(ADIOS2_FOUND)
   set(PSC_HAVE_ADIOS2 1)
 endif()
-
 function(GenerateHeaderConfig)
+
+
+
+
   set(PSC_CONFIG_DEFINES)
   foreach(OPT IN LISTS ARGN)
     string(APPEND PSC_CONFIG_DEFINES "

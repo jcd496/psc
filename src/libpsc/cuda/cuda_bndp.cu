@@ -347,7 +347,7 @@ void cuda_bndp<CudaMparticles, DIM>::post(CudaMparticles* _cmprts)
   cmprts.n_prts += n_prts_recv;
 
   thrust::sequence(cmprts.by_block_.d_id.begin(), cmprts.by_block_.d_id.end());
-  thrust::stable_sort_by_key(d_bidx.begin(), d_bidx.end(),
+  thrust::stable_sort_by_key(rmm::exec_policy(0)->on(0), d_bidx.begin(), d_bidx.end(),
                              cmprts.by_block_.d_id.begin());
 
   // drop the previously sent particles, which have been sorted to the end of

@@ -106,16 +106,35 @@ struct SetupParticles
   template <typename FUNC>
   void setupParticles(Mparticles& mprts, FUNC init_npt)
   {
+    static int pr, pr_a, pr_b, pr_c, pr_d, pr_e;
+    if(!pr){
+      pr = prof_register("setup_injector", 1., 0, 0);
+      pr_a = prof_register("setup_setupParticles", 1., 0, 0);
+      pr_b = prof_register("setup_init_npt", 1., 0, 0);
+      pr_c = prof_register("setup_ldims_inj", 1., 0, 0);
+      pr_d = prof_register("setup_mprts_injector", 1., 0, 0);
+      pr_e = prof_register("setup_grid", 1., 0, 0);
+    }
+    //#pragma omp parallel// shared(grid, inj, mprts, init_npt, pr)
+    prof_start(pr_e);
     const auto& grid = mprts.grid();
-
+    prof_stop(pr_e);
     // mprts.reserve_all(n_prts_by_patch); FIXME
-
+    prof_start(pr_d);
     auto inj = mprts.injector();
-    #pragma omp parallel for shared(grid, inj, mprts, init_npt)
+    prof_stop(pr_d);
+
+
+    //{
+    //int thread_id = omp_get_thread_num();
+    //std::cout <<"JOHN " << omp_get_num_threads() << std::endl;
+
     for (int p = 0; p < mprts.n_patches(); ++p) {
+      prof_start(pr_c);
       auto ldims = grid.ldims;
       auto injector = inj[p];
-
+      prof_stop(pr_c);
+      //#pragma omp for
       for (int jz = 0; jz < ldims[2]; jz++) {
         for (int jy = 0; jy < ldims[1]; jy++) {
           for (int jx = 0; jx < ldims[0]; jx++) {
@@ -136,8 +155,9 @@ struct SetupParticles
               if (pop < kinds_.size()) {
                 npt.kind = pop;
               }
+              prof_start(pr_b);
               init_npt(pop, pos, p, {jx, jy, jz}, npt);
-
+              prof_stop(pr_b);
               int n_in_cell;
               if (pop != neutralizing_population) {
                 n_in_cell = get_n_in_cell(npt);
@@ -155,14 +175,22 @@ struct SetupParticles
                 } else {
                   wni = npt.n / (n_in_cell * norm_.cori);
                 }
+                prof_start(pr_a);
                 auto prt = setupParticle(npt, pos, wni);
+                prof_stop(pr_a);
+                //if (thread_id == 0) prof_start(pr);
+                prof_start(pr);
                 injector(prt);
+                prof_stop(pr);
+                //if (thread_id == 0) prof_stop(pr);
               }
             }
           }
         }
       }
     }
+   
+   //}//omp parallel
   }
 
   // ----------------------------------------------------------------------
