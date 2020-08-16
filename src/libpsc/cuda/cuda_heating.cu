@@ -99,8 +99,10 @@ struct cuda_heating_foil : HeatingSpotFoilParams
       d_curand_states_{},
       first_time_{true}
   {
+    assert(n_populations_ < 10);
     float width = zh - zl;
-    fac = (8.f * pow(T, 1.5)) / (sqrt(Mi) * width);
+    for(int i=0; i<n_populations_; i++)
+        fac[i] = (8.f * pow(T[i], 1.5)) / (sqrt(Mi) * width);
   }
 
   ~cuda_heating_foil()
@@ -121,15 +123,18 @@ struct cuda_heating_foil : HeatingSpotFoilParams
     first_time_ = true;
   }
   
-  __host__  __device__ float get_H(float *crd)
+  __host__  __device__ float get_H(float *crd, int kind)
   {
     double x = crd[0], y = crd[1], z = crd[2];
+
+    if(kind == n_populations_ - 1)
+        return 0;
 
     if (z <= zl || z >= zh) {
       return 0;
     }
     
-    return fac * (exp(-(sqr(x - (xc)) + sqr(y - (yc))) / sqr(rH)) +
+    return fac[kind] * (exp(-(sqr(x - (xc)) + sqr(y - (yc))) / sqr(rH)) +
 		  exp(-(sqr(x - (xc)) + sqr(y - (yc + Ly_))) / sqr(rH)) +
 		  exp(-(sqr(x - (xc)) + sqr(y - (yc - Ly_))) / sqr(rH)) +
 		  exp(-(sqr(x - (xc + Lx_)) + sqr(y - (yc))) / sqr(rH)) +
@@ -225,7 +230,7 @@ struct cuda_heating_foil : HeatingSpotFoilParams
 
   // state (FIXME, shouldn't be part of the interface)
   bool first_time_;
-  float fac;
+  float fac[10];
   float heating_dt;
   float Lx_, Ly_;
 
@@ -256,7 +261,7 @@ void cuda_heating_run_foil_gold(cuda_heating_foil& foil, cuda_mparticles<BS>* cm
 	xi4.z + xb[2],
       };
 
-      float H = foil.get_H(xx);
+      float H = foil.get_H(xx, prt_kind);
       // float4 pxi4 = d_pxi4[n];
       // printf("%s xx = %g %g %g H = %g px = %g %g %g\n", (H > 0) ? "H" : " ",
       // 	     xx[0], xx[1], xx[2], H,
@@ -317,7 +322,7 @@ k_heating_run_foil(cuda_heating_foil d_foil, DMparticlesCuda<BS> dmprts, struct 
       xi4.y + xb[1],
       xi4.z + xb[2],
     };
-    float H = d_foil.get_H(xx);
+    float H = d_foil.get_H(xx, prt_kind);
     //d_pxi4[n].w = H;
     if (H > 0.f) {
       float4 pxi4 = dmprts.storage.pxi4[n];

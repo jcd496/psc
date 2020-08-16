@@ -60,9 +60,9 @@ struct Heating__ : HeatingBase
       auto&& prts = mprts[p];
       auto& patch = mprts.grid().patches[p];
       for (auto& prt : prts) {
-	if (prt.kind != kind_) {
-	  continue;
-	}
+	//if (prt.kind != kind_) {
+	//  continue;
+	//}
       
 	double xx[3] = {
 	  prt.x[0] + patch.xb[0],
@@ -70,7 +70,7 @@ struct Heating__ : HeatingBase
 	  prt.x[2] + patch.xb[2],
 	};
 
-	double H = get_H_(xx);
+	double H = get_H_(xx, prt.kind);
 	if (H > 0.f) {
 	  kick_particle(prt, H);
 	}

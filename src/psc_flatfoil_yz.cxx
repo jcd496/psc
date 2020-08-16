@@ -47,6 +47,7 @@ struct PscFlatfoilParams
   double target_Ti; // target ion_temperatore
   double target_Te_heat;
   double target_Ti_heat;
+  double target_Te_HE_heat;
 
   double background_n;
   double background_Te;
@@ -224,9 +225,13 @@ void setupParameters()
   g.target_n = 2.5;
   g.target_Te = 0.001;
   g.target_Ti = 0.001;
+  
+  g.electron_HE_ratio = 0.1;
+  
   g.target_Te_heat = 0.04;
   g.target_Ti_heat = 0.04;
-  g.electron_HE_ratio = 0.1;
+  g.target_Te_HE_heat = 1./g.electron_HE_ratio * g.target_Te_heat;
+
   g.background_n = .002;
   g.background_Te = .001;
   g.background_Ti = .001;
@@ -456,8 +461,10 @@ void run()
   heating_foil_params.xc = 0. * g.d_i;
   heating_foil_params.yc = 20. * g.d_i;
   heating_foil_params.rH = 12. * g.d_i;
-  heating_foil_params.T = g.target_Te_heat;
+  heating_foil_params.T[0] = g.target_Te_heat;
+  heating_foil_params.T[1] = g.target_Te_HE_heat;
   heating_foil_params.Mi = grid.kinds[MY_ION].m;
+  heating_foil_params.n_populations_ = N_MY_KINDS;
   HeatingSpotFoil heating_spot{grid, heating_foil_params};
 
   g.heating_interval = 5;
