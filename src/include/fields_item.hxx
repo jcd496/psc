@@ -16,7 +16,7 @@
 
 enum
 {
-  POFI_BY_KIND = 2, // this item needs to be replicated by kind
+  POFI_BY_KIND = 3, // this item needs to be replicated by kind
 };
 
 // ======================================================================

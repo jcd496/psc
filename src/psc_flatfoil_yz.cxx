@@ -11,7 +11,7 @@
 #include "heating_spot_foil.hxx"
 #include "inject_impl.hxx"
 
-#define DIM_3D
+//#define DIM_3D
 
 // ======================================================================
 // Particle kinds
@@ -27,10 +27,67 @@
 
 enum
 {
-  MY_ION,
+  MY_ELECTRON_HE,
   MY_ELECTRON,
+  MY_ION,
   N_MY_KINDS,
 };
+
+// ======================================================================
+// PscFlatfoilParams
+
+struct PscFlatfoilParams
+{
+  double BB;
+  double Zi;
+  double mass_ratio;
+  double lambda0;
+  double target_n;  // target density
+  double target_Te; // target electron temperature
+  double target_Ti; // target ion_temperatore
+  double target_Te_heat;
+  double target_Ti_heat;
+
+  double background_n;
+  double background_Te;
+  double background_Ti;
+  double electron_HE_ratio; 
+
+  int inject_interval;
+
+  int heating_begin;
+  int heating_end;
+  int heating_interval;
+
+  // The following parameters are calculated from the above / and other
+  // information
+
+  double d_i;
+};
+
+// ======================================================================
+// Global parameters
+//
+// I'm not a big fan of global parameters, but they're only for
+// this particular case and they help make things simpler.
+
+// An "anonymous namespace" makes these variables visible in this source file
+// only
+namespace
+{
+
+// Parameters specific to this case. They don't really need to be collected in a
+// struct, but maybe it's nice that they are
+
+PscFlatfoilParams g;
+
+std::string read_checkpoint_filename;
+
+// This is a set of generic PSC params (see include/psc.hxx),
+// like number of steps to run, etc, which also should be set by the case
+PscParams psc_params;
+
+} // namespace
 
 // ======================================================================
 // InjectFoil
@@ -66,7 +123,7 @@ public:
       npt.n = 0;
       return;
     }
-
+    double multiple = 1./g.electron_HE_ratio;
     switch (pop) {
       case MY_ION:
         npt.n = n;
@@ -74,8 +131,14 @@ public:
         npt.T[1] = Ti;
         npt.T[2] = Ti;
         break;
+      case MY_ELECTRON_HE:
+        npt.n = g.electron_HE_ratio * n;
+        npt.T[0] = multiple*Te;
+        npt.T[1] = multiple*Te;
+        npt.T[2] = multiple*Te;
+        break;
       case MY_ELECTRON:
-        npt.n = n;
+        npt.n = (1-g.electron_HE_ratio)*n;
         npt.T[0] = Te;
         npt.T[1] = Te;
         npt.T[2] = Te;
@@ -128,60 +191,8 @@ using OutputParticles = PscConfig::OutputParticles;
 using Inject = typename InjectSelector<Mparticles, InjectFoil, Dim>::Inject;
 using Heating = typename HeatingSelector<Mparticles>::Heating;
 
-// ======================================================================
-// PscFlatfoilParams
 
-struct PscFlatfoilParams
-{
-  double BB;
-  double Zi;
-  double mass_ratio;
-  double lambda0;
-  double target_n;  // target density
-  double target_Te; // target electron temperature
-  double target_Ti; // target ion_temperatore
-  double target_Te_heat;
-  double target_Ti_heat;
 
-  double background_n;
-  double background_Te;
-  double background_Ti;
-
-  int inject_interval;
-
-  int heating_begin;
-  int heating_end;
-  int heating_interval;
-
-  // The following parameters are calculated from the above / and other
-  // information
-
-  double d_i;
-};
-
-// ======================================================================
-// Global parameters
-//
-// I'm not a big fan of global parameters, but they're only for
-// this particular case and they help make things simpler.
-
-// An "anonymous namespace" makes these variables visible in this source file
-// only
-namespace
-{
-
-// Parameters specific to this case. They don't really need to be collected in a
-// struct, but maybe it's nice that they are
-
-PscFlatfoilParams g;
-
-std::string read_checkpoint_filename;
-
-// This is a set of generic PSC params (see include/psc.hxx),
-// like number of steps to run, etc, which also should be set by the case
-PscParams psc_params;
-
-} // namespace
 
 // ======================================================================
 // setupParameters
@@ -189,9 +200,9 @@ PscParams psc_params;
 void setupParameters()
 {
   // -- set some generic PSC parameters
-  psc_params.nmax = 10000001; // 5001;
+  psc_params.nmax = 50;//10000001; // 5001;
   psc_params.cfl = 0.75;
-  psc_params.write_checkpoint_every_step = 1000;
+  psc_params.write_checkpoint_every_step = 39;
   psc_params.stats_every = 1;
 
   // -- start from checkpoint:
@@ -202,7 +213,7 @@ void setupParameters()
   // FIXME: This parameter would be a good candidate to be provided
   // on the command line, rather than requiring recompilation when change.
 
-  // read_checkpoint_filename = "checkpoint_500.bp";
+   //read_checkpoint_filename = "/gpfs/alpine/proj-shared/fus137/johnd/flatfoil-SGII/double-res/checkpoint_35000.bp";
 
   // -- Set some parameters specific to this case
   g.BB = 0.;
@@ -215,7 +226,7 @@ void setupParameters()
   g.target_Ti = 0.001;
   g.target_Te_heat = 0.04;
   g.target_Ti_heat = 0.04;
-
+  g.electron_HE_ratio = 0.1;
   g.background_n = .002;
   g.background_Te = .001;
   g.background_Ti = .001;
@@ -233,13 +244,22 @@ Grid_t* setupGrid()
 {
   // --- setup domain
 #ifdef DIM_3D
-  Grid_t::Real3 LL = {80., 80., 3. * 80.}; // domain size (in d_e)
-  Int3 gdims = {160, 160, 3 * 160};        // global number of grid points
-  Int3 np = {5, 5, 3 * 5};                 // division into patches
+  //Grid_t::Real3 LL = {1280., 640., 3840.}; // domain size (in d_e)
+  //Int3 gdims = {2*1280, 2*640, 2*3840};        // global number of grid points
+  //Int3 np = {2*40, 2*20, 2*120};                 // division into patches
+  Grid_t::Real3 LL = {320., 160., 960.}; // domain size (in d_e)
+  Int3 gdims = {2*320, 2*160, 2*960};        // global number of grid points
+  Int3 np = {2*10, 2*5, 2*30};                 // division into patches
+  //20 x 10 x 60 = 12000 patches = 120 procs
 #else
-  Grid_t::Real3 LL = {1., 800., 3. * 800.}; // domain size (in d_e)
-  Int3 gdims = {1, 1600, 3 * 1600};         // global number of grid points
-  Int3 np = {1, 50, 3 * 50};                // division into patches
+  //Grid_t::Real3 LL = {1., 640., 3840.}; // domain size (in d_e)
+  //Int3 gdims = {1, 2*640, 2*3840};        // global number of grid points
+  //Int3 np = {1, 2*20, 2*120};                 // division into patches
+  //96 procs
+
+  Grid_t::Real3 LL = {1., 640., 640.}; // domain size (in d_e)
+  Int3 gdims = {1, 640, 640};        // global number of grid points
+  Int3 np = {1, 20, 20};                 // division into patches
 #endif
 
   Grid_t::Domain domain{gdims, LL, -.5 * LL, np};
@@ -250,10 +270,12 @@ Grid_t* setupGrid()
                    {BND_PRT_PERIODIC, BND_PRT_PERIODIC, BND_PRT_PERIODIC}};
 
   // -- setup particle kinds
-  // last population ("e") is neutralizing
+  // last population ("i") is neutralizing
   Grid_t::Kinds kinds(N_MY_KINDS);
   kinds[MY_ION] = {g.Zi, g.mass_ratio * g.Zi, "i"};
+  kinds[MY_ELECTRON_HE] = {-1., 1., "he_e"};
   kinds[MY_ELECTRON] = {-1., 1., "e"};
+
 
   g.d_i = sqrt(kinds[MY_ION].m / kinds[MY_ION].q);
 
@@ -292,13 +314,19 @@ void initializeParticles(SetupParticles<Mparticles>& setup_particles,
   // -- set particle initial condition
   partitionAndSetupParticles(
     setup_particles, balance, grid_ptr, mprts,
-    [&](int kind, double crd[3], psc_particle_npt& npt) {
+    [&](int kind, Double3 crd, psc_particle_npt& npt) {
       switch (kind) {
         case MY_ION:
           npt.n = g.background_n;
           npt.T[0] = g.background_Ti;
           npt.T[1] = g.background_Ti;
           npt.T[2] = g.background_Ti;
+          break;
+        case MY_ELECTRON_HE:
+          npt.n = 0.;
+          npt.T[0] = g.background_Te;
+          npt.T[1] = g.background_Te;
+          npt.T[2] = g.background_Te;
           break;
         case MY_ELECTRON:
           npt.n = g.background_n;
@@ -343,6 +371,7 @@ void run()
   // ----------------------------------------------------------------------
   // setup various parameters first
 
+
   setupParameters();
 
   // ----------------------------------------------------------------------
@@ -365,23 +394,23 @@ void run()
   Balance balance{psc_params.balance_interval, 3};
 
   // -- Sort
-  psc_params.sort_interval = 10;
+  psc_params.sort_interval = 20;
 
   // -- Collision
-  int collision_interval = 10;
+  int collision_interval = 20;
   double collision_nu =
     3.76 * std::pow(g.target_Te_heat, 2.) / g.Zi / g.lambda0;
   Collision collision{grid, collision_interval, collision_nu};
 
   // -- Checks
   ChecksParams checks_params{};
-  checks_params.continuity_every_step = 0;
-  checks_params.continuity_threshold = 1e-4;
-  checks_params.continuity_verbose = true;
+  checks_params.continuity_every_step = 200;
+  checks_params.continuity_threshold = 1e-3;
+  checks_params.continuity_verbose = false;
   checks_params.continuity_dump_always = false;
-  checks_params.gauss_every_step = 100;
-  checks_params.gauss_threshold = 1e-4;
-  checks_params.gauss_verbose = true;
+  checks_params.gauss_every_step = 200;
+  checks_params.gauss_threshold = 1e-3;
+  checks_params.gauss_verbose = false;
   checks_params.gauss_dump_always = false;
   Checks checks{grid, MPI_COMM_WORLD, checks_params};
 
@@ -399,10 +428,10 @@ void run()
 
   // -- output fields
   OutputFieldsParams outf_params{};
-  outf_params.pfield_interval = 500;
-  outf_params.tfield_interval = 500;
-  outf_params.tfield_average_every = 50;
-  outf_params.tfield_moments_average_every = 50;
+  outf_params.pfield_interval = -1000;
+  outf_params.tfield_interval = 40;
+  outf_params.tfield_average_every = 10;
+  outf_params.tfield_moments_average_every = 10;
   OutputFields outf{grid, outf_params};
 
   // -- output particles
@@ -431,7 +460,7 @@ void run()
   heating_foil_params.Mi = grid.kinds[MY_ION].m;
   HeatingSpotFoil heating_spot{grid, heating_foil_params};
 
-  g.heating_interval = 20;
+  g.heating_interval = 5;
   g.heating_begin = 0;
   g.heating_end = 10000000;
   auto& heating =
@@ -456,7 +485,7 @@ void run()
 
   SetupParticles<Mparticles> setup_particles(grid);
   setup_particles.fractional_n_particles_per_cell = true;
-  setup_particles.neutralizing_population = MY_ELECTRON;
+  setup_particles.neutralizing_population = MY_ION;
 
   Inject inject{grid,        g.inject_interval, inject_tau,
                 MY_ELECTRON, inject_target,     setup_particles};
@@ -482,6 +511,7 @@ void run()
     if (timestep >= g.heating_begin && timestep < g.heating_end &&
         g.heating_interval > 0 && timestep % g.heating_interval == 0) {
       mpi_printf(comm, "***** Performing heating...\n");
+      MPI_Barrier(MPI_COMM_WORLD); 
       prof_start(pr_heating);
       heating(mprts);
       prof_stop(pr_heating);
@@ -515,7 +545,7 @@ int main(int argc, char** argv)
   psc_init(argc, argv);
 
   run();
-
+  MPI_Barrier(MPI_COMM_WORLD);
   psc_finalize();
   return 0;
 }

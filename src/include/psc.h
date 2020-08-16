@@ -37,6 +37,7 @@ enum {
 enum {
   KIND_ELECTRON,
   KIND_ION,
+  KIND_ELECTRON_HE,
   NR_KINDS,
 };
 

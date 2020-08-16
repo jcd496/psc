@@ -25,6 +25,8 @@ class Psc(CMakePackage):
             description='Enable NVTX profiling support')
     variant('rmm', default=False,
             description='Enable RMM memory manager support')
+    variant('tests', default=False,
+            description='Enable RMM memory manager support')
 
     depends_on('cmake@3.17.0:')
 

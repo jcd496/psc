@@ -43,6 +43,7 @@ struct SetupParticles
       }
       return n_prts;
     }
+    //member function returns int, cannot return this
     return npt.n / norm_.cori + .5;
   }
 
@@ -87,7 +88,6 @@ struct SetupParticles
         pzi *= gam;
       }
     }
-
     return psc::particle::Inject{pos, {pxi, pyi, pzi}, wni, npt.kind, npt.tag};
   }
 
@@ -137,7 +137,6 @@ struct SetupParticles
                 npt.kind = pop;
               }
               init_npt(pop, pos, p, {jx, jy, jz}, npt);
-
               int n_in_cell;
               if (pop != neutralizing_population) {
                 n_in_cell = get_n_in_cell(npt);
