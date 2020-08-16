@@ -37,10 +37,9 @@ struct HeatingSpotFoil : HeatingSpotFoilParams
     // FIXME, I don't understand the sqrt(Mi) in here
   }
   
-  double operator()(const double *crd, int kind)
+  double operator()(const double *crd, const int kind)
   {
     double x = crd[0], y = crd[1], z = crd[2];
-    
     if(kind == n_populations_ - 1)
         return 0;
 
