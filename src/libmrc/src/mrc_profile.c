@@ -3,7 +3,7 @@
 
 #include <assert.h>
 #include <string.h>
-
+#include <cuda.h>
 struct prof_globals prof_globals;
 
 static int prof_inited;
@@ -92,6 +92,12 @@ prof_print_mpi(MPI_Comm comm)
   MPI_Reduce(times, times_avg, nr_prof_data, MPI_FLOAT, MPI_SUM, 0, comm);
   MPI_Reduce(times, times_min, nr_prof_data, MPI_FLOAT, MPI_MIN, 0, comm);
   MPI_Reduce(times, times_max, nr_prof_data, MPI_FLOAT, MPI_MAX, 0, comm);
+  
+  size_t gpu_free, gpu_total, gpu_min_free_space, gpu_max_free_space, gpu_avg_free_space;
+  cudaMemGetInfo(&gpu_free, &gpu_total);
+  MPI_Reduce(&gpu_free, &gpu_min_free_space, 1, MPI_UNSIGNED_LONG, MPI_MIN, 0, comm);
+  MPI_Reduce(&gpu_free, &gpu_max_free_space, 1, MPI_UNSIGNED_LONG, MPI_MAX, 0, comm);
+  MPI_Reduce(&gpu_free, &gpu_avg_free_space, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, comm);
 
   for (int pr = 0; pr < nr_prof_data; pr++) {
     struct prof_info *pinfo = &prof_globals.info[pr];
@@ -115,7 +121,11 @@ prof_print_mpi(MPI_Comm comm)
 	     times_avg[pr] / 1e3, times_min[pr] / 1e3, times_max[pr] / 1e3,
 	     pinfo->total_time / 1e6, pinfo->total_cnt, pinfo->total_time / pinfo->total_cnt / 1e3);
     }
+    printf("minimum available gpu memory %lf Gb\n", gpu_min_free_space / 1e9);
+    printf("maximum available gpu memory %lf Gb\n", gpu_max_free_space / 1e9);
+    printf("average available gpu memory %lf Gb\n", gpu_avg_free_space / 1e9 / size);
   }
+  printf("rank %d: available gpu memory %lf Gb\n", rank, gpu_free / 1e9);
 
   for (int pr = 0; pr < nr_prof_data; pr++) {
     struct prof_info *pinfo = &prof_globals.info[pr];

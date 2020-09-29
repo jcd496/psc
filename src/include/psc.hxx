@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <cuda.h>
 #include <mrc_profile.h>
 #include <DiagEnergies.h>
 

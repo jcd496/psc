@@ -10,7 +10,7 @@
 
 #include <mrc_profile.h>
 #include <string.h>
-
+#include <cuda.h>
 extern double *psc_balance_comp_time_by_patch;
 
 static double
@@ -731,6 +731,10 @@ private:
 
   void balance_particles(communicate_ctx& ctx, const Grid_t& new_grid, MparticlesBase& mp_base)
   {
+    size_t gpu_free, gpu_total, gpu_min_free_space, gpu_max_free_space, gpu_avg_free_space;
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("gpu memory before balance_particles %lf Gb\n", gpu_free / 1e9);
+
     int n_patches = mp_base.n_patches();
     auto n_prts_by_patch_old = mp_base.sizeByPatch();
     auto n_prts_by_patch_new = ctx.new_n_prts(n_prts_by_patch_old);
@@ -753,6 +757,8 @@ private:
 
       mp_old = std::move(mp_new);
     }
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("gpu memory after balance_particles %lf Gb\n", gpu_free / 1e9);
   }
   
   void balance_field(communicate_ctx& ctx, const Grid_t& new_grid, MfieldsBase& mf_base)
@@ -823,6 +829,10 @@ private:
 
     prof_start(pr_bal_load);
     auto old_grid = gridp;
+
+    size_t gpu_free, gpu_total, gpu_min_free_space, gpu_max_free_space, gpu_avg_free_space;
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("free gpu memory before balance %lf Gb\n", gpu_free / 1e9);
     
     auto loads_all = gather_loads(*old_grid, loads);
     int n_patches_new = find_best_mapping(*old_grid, loads_all);
@@ -875,6 +885,9 @@ private:
     delete gridp;
     gridp = new_grid;
     psc_balance_generation_cnt++;
+    
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("free gpu memory after balance %lf Gb\n", gpu_free / 1e9);
 
     return n_prts_by_patch_new;
   }

@@ -318,7 +318,7 @@ void cuda_mparticles<BS>::inject(const std::vector<Particle>& buf,
     setup_internals();
     return;
   }
-  
+
   using Double3 = Vec3<double>;
   
   uint buf_n = 0;

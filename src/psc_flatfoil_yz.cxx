@@ -11,7 +11,7 @@
 #include "heating_spot_foil.hxx"
 #include "inject_impl.hxx"
 
-#define DIM_3D
+//#define DIM_3D
 
 // ======================================================================
 // Particle kinds
@@ -202,7 +202,7 @@ void setupParameters()
   // FIXME: This parameter would be a good candidate to be provided
   // on the command line, rather than requiring recompilation when change.
 
-  // read_checkpoint_filename = "checkpoint_500.bp";
+   //read_checkpoint_filename = "/gpfs/alpine/proj-shared/fus137/johnd/flatfoil-SGII/double-res/checkpoint_35000.bp";
 
   // -- Set some parameters specific to this case
   g.BB = 0.;
@@ -233,13 +233,22 @@ Grid_t* setupGrid()
 {
   // --- setup domain
 #ifdef DIM_3D
-  Grid_t::Real3 LL = {80., 80., 3. * 80.}; // domain size (in d_e)
-  Int3 gdims = {160, 160, 3 * 160};        // global number of grid points
-  Int3 np = {5, 5, 3 * 5};                 // division into patches
+    //Grid_t::Real3 LL = {1280., 640., 3840.}; // domain size (in d_e)
+    //Int3 gdims = {2*1280, 2*640, 2*3840};        // global number of grid points
+    //Int3 np = {2*40, 2*20, 2*120};                 // division into patches
+    //Grid_t::Real3 LL = {640., 320., 1920.}; // domain size (in d_e)
+    //Int3 gdims = {640, 320, 1920};        // global number of grid points
+    //Int3 np = {20, 10, 60};                 // division into patches
+    Grid_t::Real3 LL = {64., 320., 320.}; // domain size (in d_e)
+    Int3 gdims = {64, 320, 320};        // global number of grid points
+    Int3 np = {2, 10, 10};                 // division into patches
 #else
-  Grid_t::Real3 LL = {1., 800., 3. * 800.}; // domain size (in d_e)
-  Int3 gdims = {1, 1600, 3 * 1600};         // global number of grid points
-  Int3 np = {1, 50, 3 * 50};                // division into patches
+    //Grid_t::Real3 LL = {1., 640., 3840.}; // domain size (in d_e)
+    //Int3 gdims = {1, 2*640, 2*3840};        // global number of grid points
+    //Int3 np = {1, 2*20, 2*120};                 // division into patches
+  Grid_t::Real3 LL = {1., 32., 3200.}; // domain size (in d_e)
+  Int3 gdims = {1, 32, 2 * 3200};         // global number of grid points
+  Int3 np = {1, 1, 2 * 100};                // division into patches
 #endif
 
   Grid_t::Domain domain{gdims, LL, -.5 * LL, np};
@@ -361,25 +370,25 @@ void run()
   // Set up various objects needed to run this case
 
   // -- Balance
-  psc_params.balance_interval = 500;
+  psc_params.balance_interval = 10;
   Balance balance{psc_params.balance_interval, 3};
 
   // -- Sort
   psc_params.sort_interval = 10;
 
   // -- Collision
-  int collision_interval = 10;
+  int collision_interval = 20;
   double collision_nu =
     3.76 * std::pow(g.target_Te_heat, 2.) / g.Zi / g.lambda0;
   Collision collision{grid, collision_interval, collision_nu};
 
   // -- Checks
   ChecksParams checks_params{};
-  checks_params.continuity_every_step = 0;
+  checks_params.continuity_every_step = 200;
   checks_params.continuity_threshold = 1e-4;
   checks_params.continuity_verbose = true;
   checks_params.continuity_dump_always = false;
-  checks_params.gauss_every_step = 100;
+  checks_params.gauss_every_step = 200;
   checks_params.gauss_threshold = 1e-4;
   checks_params.gauss_verbose = true;
   checks_params.gauss_dump_always = false;
@@ -399,8 +408,8 @@ void run()
 
   // -- output fields
   OutputFieldsParams outf_params{};
-  outf_params.pfield_interval = 500;
-  outf_params.tfield_interval = 500;
+  outf_params.pfield_interval = -500;
+  outf_params.tfield_interval = 1000;
   outf_params.tfield_average_every = 50;
   outf_params.tfield_moments_average_every = 50;
   OutputFields outf{grid, outf_params};

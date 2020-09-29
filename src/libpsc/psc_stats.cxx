@@ -29,7 +29,7 @@ psc_stats_log(int timestep)
   MPI_Reduce(psc_stats_val, stats_min, nr_psc_stats, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
   MPI_Reduce(psc_stats_val, stats_max, nr_psc_stats, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
   MPI_Reduce(psc_stats_val, stats_sum, nr_psc_stats, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-
+  printf("rank %d: nr_prts: %10g\n", rank, psc_stats_val[1]); 
   if (rank == 0) {
     printf("    "
 	   "======================================================== step %-7d ===\n",
