@@ -1,4 +1,5 @@
 
+#include <cuda.h>
 #pragma once
 
 #include "fields.hxx"
@@ -10,7 +11,6 @@
 
 #include <mrc_profile.h>
 #include <string.h>
-#include <cuda.h>
 extern double *psc_balance_comp_time_by_patch;
 
 static double

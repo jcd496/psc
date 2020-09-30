@@ -414,10 +414,15 @@ struct Psc
       prof_stop(pr_sort);
     }
 
+    size_t gpu_free, gpu_total, gpu_min_free_space, gpu_max_free_space, gpu_avg_free_space;
     if (collision_.interval() > 0 && timestep % collision_.interval() == 0) {
       mpi_printf(comm, "***** Performing collisions...\n");
       prof_start(pr_collision);
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("gpu memory before collisions %lf Gb\n", gpu_free / 1e9);
       collision_(mprts_);
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("gpu memory after collisions %lf Gb\n", gpu_free / 1e9);
       prof_stop(pr_collision);
     }
 

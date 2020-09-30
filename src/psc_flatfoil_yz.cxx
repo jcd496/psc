@@ -11,7 +11,7 @@
 #include "heating_spot_foil.hxx"
 #include "inject_impl.hxx"
 
-//#define DIM_3D
+#define DIM_3D
 
 // ======================================================================
 // Particle kinds
@@ -191,7 +191,7 @@ void setupParameters()
   // -- set some generic PSC parameters
   psc_params.nmax = 10000001; // 5001;
   psc_params.cfl = 0.75;
-  psc_params.write_checkpoint_every_step = 1000;
+  psc_params.write_checkpoint_every_step = 100;//0;
   psc_params.stats_every = 1;
 
   // -- start from checkpoint:
@@ -203,6 +203,7 @@ void setupParameters()
   // on the command line, rather than requiring recompilation when change.
 
    //read_checkpoint_filename = "/gpfs/alpine/proj-shared/fus137/johnd/flatfoil-SGII/double-res/checkpoint_35000.bp";
+   //read_checkpoint_filename = "/gpfs/alpine/proj-shared/fus137/johnd/flatfoil-summit_9-29/memTest3d/checkpoint_400.bp";
 
   // -- Set some parameters specific to this case
   g.BB = 0.;
@@ -239,9 +240,9 @@ Grid_t* setupGrid()
     //Grid_t::Real3 LL = {640., 320., 1920.}; // domain size (in d_e)
     //Int3 gdims = {640, 320, 1920};        // global number of grid points
     //Int3 np = {20, 10, 60};                 // division into patches
-    Grid_t::Real3 LL = {64., 320., 320.}; // domain size (in d_e)
-    Int3 gdims = {64, 320, 320};        // global number of grid points
-    Int3 np = {2, 10, 10};                 // division into patches
+    Grid_t::Real3 LL = {80., 80., 3 * 80.}; // domain size (in d_e)
+    Int3 gdims = {160, 160, 3 * 160};        // global number of grid points
+    Int3 np = {5, 5, 3 * 5};                 // division into patches
 #else
     //Grid_t::Real3 LL = {1., 640., 3840.}; // domain size (in d_e)
     //Int3 gdims = {1, 2*640, 2*3840};        // global number of grid points
@@ -370,7 +371,7 @@ void run()
   // Set up various objects needed to run this case
 
   // -- Balance
-  psc_params.balance_interval = 10;
+  psc_params.balance_interval = 5;
   Balance balance{psc_params.balance_interval, 3};
 
   // -- Sort
@@ -480,10 +481,15 @@ void run()
     auto comm = grid.comm();
     auto timestep = grid.timestep();
 
+    size_t gpu_free, gpu_total, gpu_min_free_space, gpu_max_free_space, gpu_avg_free_space;
     if (g.inject_interval > 0 && timestep % g.inject_interval == 0) {
       mpi_printf(comm, "***** Performing injection...\n");
       prof_start(pr_inject);
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("gpu memory before inject %lf Gb\n", gpu_free / 1e9);
       inject(mprts);
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("gpu memory before inject %lf Gb\n", gpu_free / 1e9);
       prof_stop(pr_inject);
     }
 
@@ -492,7 +498,11 @@ void run()
         g.heating_interval > 0 && timestep % g.heating_interval == 0) {
       mpi_printf(comm, "***** Performing heating...\n");
       prof_start(pr_heating);
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("gpu memory before heating %lf Gb\n", gpu_free / 1e9);
       heating(mprts);
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("gpu memory after heating %lf Gb\n", gpu_free / 1e9);
       prof_stop(pr_heating);
     }
   };
