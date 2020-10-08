@@ -285,7 +285,6 @@ struct Psc
     if (p_.balance_interval > 0 && timestep % p_.balance_interval == 0) {
       balance_(grid_, mprts_);
     }
-
     // prof_start(pr_time_step_no_comm);
     // prof_stop(pr_time_step_no_comm); // actual measurements are done w/ restart
 
@@ -406,30 +405,38 @@ struct Psc
     if (p_.balance_interval > 0 && timestep % p_.balance_interval == 0) {
       balance_(grid_, mprts_);
     }
-
+    MPI_Barrier(comm);
+    mpi_printf(comm, "back in psc.hxx\n");
     if (p_.sort_interval > 0 && timestep % p_.sort_interval == 0) {
       mpi_printf(comm, "***** Sorting...\n");
       prof_start(pr_sort);
       sort_(mprts_);
       prof_stop(pr_sort);
     }
-
+    MPI_Barrier(comm);
+    mpi_printf(comm, "post sort\n");
+    int rank;
+    MPI_Comm_rank(comm, &rank);
     size_t gpu_free, gpu_total, gpu_min_free_space, gpu_max_free_space, gpu_avg_free_space;
     if (collision_.interval() > 0 && timestep % collision_.interval() == 0) {
       mpi_printf(comm, "***** Performing collisions...\n");
       prof_start(pr_collision);
     cuMemGetInfo(&gpu_free, &gpu_total);
-    printf("gpu memory before collisions %lf Gb\n", gpu_free / 1e9);
+    printf("rank %d: gpu memory before collisions %lf Gb\n", rank, gpu_free / 1e9);
       collision_(mprts_);
     cuMemGetInfo(&gpu_free, &gpu_total);
-    printf("gpu memory after collisions %lf Gb\n", gpu_free / 1e9);
+    printf("rank %d: gpu memory after collisions %lf Gb\n", rank, gpu_free / 1e9);
       prof_stop(pr_collision);
     }
+    MPI_Barrier(comm);
+    mpi_printf(comm, "post collision\n");
 
     // === particle injection
     prof_start(pr_inject_prts);
     inject_particles();
     prof_stop(pr_inject_prts);
+    MPI_Barrier(comm);
+    mpi_printf(comm, "post inject\n");
 
     if (checks_.continuity_every_step > 0 &&
         timestep % checks_.continuity_every_step == 0) {
@@ -445,15 +452,21 @@ struct Psc
     prof_stop(pr_push_prts);
     // state is now: x^{n+3/2}, p^{n+1}, E^{n+1/2}, B^{n+1/2}, j^{n+1}
 
+    MPI_Barrier(comm);
+    mpi_printf(comm, "post push mprts\n");
     // === field propagation B^{n+1/2} -> B^{n+1}
     prof_start(pr_push_flds);
     pushf_.push_H(mflds_, .5, Dim{});
     prof_stop(pr_push_flds);
     // state is now: x^{n+3/2}, p^{n+1}, E^{n+1/2}, B^{n+1}, j^{n+1}
+    MPI_Barrier(comm);
+    mpi_printf(comm, "post push h\n");
 
     prof_start(pr_bndp);
     bndp_(mprts_);
     prof_stop(pr_bndp);
+    MPI_Barrier(comm);
+    mpi_printf(comm, "post bndp\n");
 
     // === field propagation E^{n+1/2} -> E^{n+3/2}
     prof_start(pr_bndf);

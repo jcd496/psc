@@ -103,6 +103,10 @@ struct MparticlesCudaStorage_
   __host__
   void resize(size_t n)
   {
+    if(n > xi4.capacity()){
+        xi4.reserve(1.2 * n);
+        pxi4.reserve(1.2 * n);
+    }
     xi4.resize(n);
     pxi4.resize(n);
   }

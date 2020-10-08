@@ -2,9 +2,10 @@
 #include "PscConfig.h"
 
 #ifdef PSC_HAVE_RMM
-#include <rmm/mr/device/cnmem_memory_resource.hpp>
 #include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/default_memory_resource.hpp>
+#include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/mr/device/logging_resource_adaptor.hpp>
 #include <rmm/thrust_rmm_allocator.h>
 #endif
 
@@ -22,11 +23,20 @@ cuda_base_init(void)
 
   first_time = false;
 
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #ifdef PSC_HAVE_RMM
-  static rmm::mr::cnmem_memory_resource pool_mr;
-  rmm::mr::set_default_resource(&pool_mr);
+  //rmm::mr::device_memory_resource* mr =
+  //  rmm::mr::get_current_device_resource(); // Points to `cuda_memory_resource`
+  static rmm::mr::cuda_memory_resource pool_mr{}; 
+  //static rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource> pool_mr{
+  //  mr};
+  //static rmm::mr::logging_resource_adaptor<decltype(pool_mr)> log_mr{
+  //  &pool_mr, std::cout, true};
+  static rmm::mr::logging_resource_adaptor<decltype(pool_mr)> log_mr{
+    &pool_mr, std::cout, true};
+  rmm::mr::set_current_device_resource(&log_mr);
 #endif
-
   int deviceCount;
   cudaGetDeviceCount(&deviceCount);
 
@@ -36,8 +46,6 @@ cuda_base_init(void)
     return;
   }
 
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   if (rank != 0) {
     return;
   }

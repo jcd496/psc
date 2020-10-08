@@ -731,9 +731,9 @@ private:
 
   void balance_particles(communicate_ctx& ctx, const Grid_t& new_grid, MparticlesBase& mp_base)
   {
-    size_t gpu_free, gpu_total, gpu_min_free_space, gpu_max_free_space, gpu_avg_free_space;
-    cuMemGetInfo(&gpu_free, &gpu_total);
-    printf("gpu memory before balance_particles %lf Gb\n", gpu_free / 1e9);
+    //size_t gpu_free, gpu_total, gpu_min_free_space, gpu_max_free_space, gpu_avg_free_space;
+    //cuMemGetInfo(&gpu_free, &gpu_total);
+    //printf("gpu memory before balance_particles %lf Gb\n", gpu_free / 1e9);
 
     int n_patches = mp_base.n_patches();
     auto n_prts_by_patch_old = mp_base.sizeByPatch();
@@ -757,8 +757,8 @@ private:
 
       mp_old = std::move(mp_new);
     }
-    cuMemGetInfo(&gpu_free, &gpu_total);
-    printf("gpu memory after balance_particles %lf Gb\n", gpu_free / 1e9);
+    //cuMemGetInfo(&gpu_free, &gpu_total);
+    //printf("gpu memory after balance_particles %lf Gb\n", gpu_free / 1e9);
   }
   
   void balance_field(communicate_ctx& ctx, const Grid_t& new_grid, MfieldsBase& mf_base)
@@ -829,16 +829,18 @@ private:
 
     prof_start(pr_bal_load);
     auto old_grid = gridp;
-
+    int rank;
+    auto comm = old_grid->comm();
+    MPI_Comm_rank(comm, &rank);
     size_t gpu_free, gpu_total, gpu_min_free_space, gpu_max_free_space, gpu_avg_free_space;
     cuMemGetInfo(&gpu_free, &gpu_total);
-    printf("free gpu memory before balance %lf Gb\n", gpu_free / 1e9);
+    printf("rank %d: free gpu memory before balance %lf Gb\n",rank,  gpu_free / 1e9);
     
     auto loads_all = gather_loads(*old_grid, loads);
     int n_patches_new = find_best_mapping(*old_grid, loads_all);
     prof_stop(pr_bal_load);
 
-    if (n_patches_new < 0) { // unchanged mapping, nothing tbd
+    if (0 && n_patches_new < 0) { // unchanged mapping, nothing tbd
       mpi_printf(old_grid->comm(), "***** Balance: decomposition unchanged\n");
       return n_prts_by_patch_old;
     }
@@ -856,6 +858,8 @@ private:
     prof_stop(pr_bal_ctx);
 
     // particles
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("rank %d: free gpu memory before balancing particles %lf Gb\n",rank,  gpu_free / 1e9);
     std::vector<uint> n_prts_by_patch_new;
     if (mp) {
       mpi_printf(old_grid->comm(), "***** Balance: balancing particles\n");
@@ -865,6 +869,8 @@ private:
     } else {
       n_prts_by_patch_new = ctx.new_n_prts(n_prts_by_patch_old);
     }
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("rank %d: free gpu memory after balancing particles %lf Gb\n",rank,  gpu_free / 1e9);
 
     prof_start(pr_bal_flds);
     // state field
@@ -872,6 +878,8 @@ private:
     for (auto mf : MfieldsStateBase::instances) {
       balance_state_field(ctx, *new_grid, *mf);
     }
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("rank %d: free gpu memory after balancing state field %lf Gb\n",rank,  gpu_free / 1e9);
     
     // fields
     for (auto mf : MfieldsBase::instances) {
@@ -879,6 +887,8 @@ private:
       balance_field(ctx, *new_grid, *mf);
     }
     prof_stop(pr_bal_flds);
+    cuMemGetInfo(&gpu_free, &gpu_total);
+    printf("rank %d: free gpu memory after balancing fields %lf Gb\n",rank,  gpu_free / 1e9);
 
     // update psc etc
     delete gridp;
@@ -886,8 +896,9 @@ private:
     psc_balance_generation_cnt++;
     
     cuMemGetInfo(&gpu_free, &gpu_total);
-    printf("free gpu memory after balance %lf Gb\n", gpu_free / 1e9);
-
+    printf("rank %d: free gpu memory after balance %lf Gb\n", rank, gpu_free / 1e9);
+    MPI_Barrier(comm);
+    if(rank==0) printf("post barrier\n");
     return n_prts_by_patch_new;
   }
 
