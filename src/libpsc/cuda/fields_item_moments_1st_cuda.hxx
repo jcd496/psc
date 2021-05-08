@@ -164,7 +164,8 @@ public:
 
   explicit Moment_1st_cuda(const Grid_t& grid)
     : Base{grid}, bnd_{grid, grid.ibn}
-  {}
+  {
+  }
 
   explicit Moment_1st_cuda(const Mparticles& mprts)
     : Base{mprts.grid()}, bnd_{mprts.grid(), mprts.grid().ibn}

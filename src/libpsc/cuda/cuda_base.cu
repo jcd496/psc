@@ -5,12 +5,25 @@
 #include <rmm/mr/device/pool_memory_resource.hpp>
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/mr/device/logging_resource_adaptor.hpp>
+#include <rmm/mr/device/tracking_resource_adaptor.hpp>
 #endif
 
 #include <cstdio>
 #include <cassert>
 #include <cuda_bits.h>
 #include <mrc_common.h>
+
+std::size_t mem_particles;
+std::size_t mem_sort;
+std::size_t mem_sort_by_block;
+std::size_t mem_bnd;
+std::size_t mem_heating;
+std::size_t mem_collisions;
+
+using device_mr_type = rmm::mr::device_memory_resource;
+using pool_mr_type = rmm::mr::pool_memory_resource<device_mr_type>;
+using track_mr_type = rmm::mr::tracking_resource_adaptor<pool_mr_type>;
+using log_mr_type = rmm::mr::logging_resource_adaptor<track_mr_type>;
 
 void cuda_base_init(void)
 {
@@ -21,13 +34,12 @@ void cuda_base_init(void)
   first_time = false;
 
 #ifdef PSC_HAVE_RMM
-  rmm::mr::device_memory_resource* mr =
+  device_mr_type* mr =
     rmm::mr::get_current_device_resource(); // Points to `cuda_memory_resource`
-  static rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource> pool_mr{
-    mr};
-#if 0
-  static rmm::mr::logging_resource_adaptor<decltype(pool_mr)> log_mr{
-    &pool_mr, std::cout, true};
+  static pool_mr_type pool_mr{mr};
+#if 1
+  static track_mr_type track_mr{&pool_mr};
+  static log_mr_type log_mr{&track_mr, std::cout, true};
   rmm::mr::set_current_device_resource(&log_mr);
 #else
   rmm::mr::set_current_device_resource(&pool_mr);
@@ -113,11 +125,11 @@ void cuda_base_init(void)
       "  Compute mode:                                  %s\n",
       deviceProp.computeMode == cudaComputeModeDefault
         ? "Default (multiple host threads can use this device simultaneously)"
-        : deviceProp.computeMode == cudaComputeModeExclusive
-            ? "Exclusive (only one host thread at a time can use this device)"
-            : deviceProp.computeMode == cudaComputeModeProhibited
-                ? "Prohibited (no host thread can use this device)"
-                : "Unknown");
+      : deviceProp.computeMode == cudaComputeModeExclusive
+        ? "Exclusive (only one host thread at a time can use this device)"
+      : deviceProp.computeMode == cudaComputeModeProhibited
+        ? "Prohibited (no host thread can use this device)"
+        : "Unknown");
 #endif
   }
 }
