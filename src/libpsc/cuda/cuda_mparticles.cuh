@@ -130,8 +130,8 @@ public:
 
   __host__ void resize(size_t n)
   {
-    mem_particles -= allocated_bytes(xi4);
-    mem_particles -= allocated_bytes(pxi4);
+    mem_sub(xi4);
+    mem_sub(pxi4);
 
     // grow arrays by 20% only
     if (n > xi4.capacity()) {
@@ -141,8 +141,8 @@ public:
     xi4.resize(n);
     pxi4.resize(n);
 
-    mem_particles += allocated_bytes(xi4);
-    mem_particles += allocated_bytes(pxi4);
+    mem_add(xi4);
+    mem_add(pxi4);
   }
 
   __host__ __device__ DParticleCuda operator[](int n) const
