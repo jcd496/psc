@@ -334,7 +334,7 @@ void cuda_bndp<CudaMparticles, DIM>::post(CudaMparticles* _cmprts)
 {
   auto& cmprts = *_cmprts;
   auto& d_bidx = cmprts.by_block_.d_idx;
-
+  MEM_STATS();
   auto n_prts_send = d_bidx.size() - cmprts.n_prts;
   auto n_prts_recv = convert_and_copy_to_dev(&cmprts);
   cmprts.n_prts += n_prts_recv;
@@ -363,7 +363,7 @@ void cuda_bndp<CudaMparticles, DIM>::post(CudaMparticles* _cmprts)
                       search_begin + cmprts.n_blocks,
                       cmprts.by_block_.d_off.begin() + 1);
   // d_off[0] was set to zero during d_off initialization
-
+  MEM_STATS();
   cmprts.need_reorder = true;
 }
 

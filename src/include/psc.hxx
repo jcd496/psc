@@ -147,6 +147,9 @@ struct Psc
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     log_.open("mem-" + std::to_string(rank) + ".log");
 
+    log_ << "step,n_patches,n_prts,fields,nfields,particles,collisions,sort,sort_block,bnd,heating,allocated,total,unaccounted"
+     << "\n";
+
     initialize_stats();
     initialize();
   }
@@ -430,11 +433,13 @@ struct Psc
       prof_stop(pr_collision);
     }
 
+    MEM_STATS();
     // === particle injection
     prof_start(pr_inject_prts);
     inject_particles();
     prof_stop(pr_inject_prts);
 
+    MEM_STATS();
     if (checks_.continuity_every_step > 0 &&
         timestep % checks_.continuity_every_step == 0) {
       mpi_printf(comm, "***** Checking continuity...\n");
@@ -443,6 +448,7 @@ struct Psc
       prof_stop(pr_checks);
     }
 
+    MEM_STATS();
     // === particle propagation p^{n} -> p^{n+1}, x^{n+1/2} -> x^{n+3/2}
     mpi_printf(comm, "***** Pushing particles...\n");
     prof_start(pr_push_prts);
@@ -450,6 +456,7 @@ struct Psc
     prof_stop(pr_push_prts);
     // state is now: x^{n+3/2}, p^{n+1}, E^{n+1/2}, B^{n+1/2}, j^{n+1}
 
+    MEM_STATS();
     // === field propagation B^{n+1/2} -> B^{n+1}
     mpi_printf(comm, "***** Pushing B...\n");
     prof_start(pr_push_flds);
@@ -457,11 +464,13 @@ struct Psc
     prof_stop(pr_push_flds);
     // state is now: x^{n+3/2}, p^{n+1}, E^{n+1/2}, B^{n+1}, j^{n+1}
 
+    MEM_STATS();
     mpi_printf(comm, "***** Bnd particles...\n");
     prof_start(pr_bndp);
     bndp_(mprts_);
     prof_stop(pr_bndp);
 
+    MEM_STATS();
     // === field propagation E^{n+1/2} -> E^{n+3/2}
     mpi_printf(comm, "***** Push fields E\n");
     prof_start(pr_bndf);
@@ -493,6 +502,7 @@ struct Psc
     pushf_.push_H(mflds_, .5, Dim{});
     prof_stop(pr_push_flds);
 
+    MEM_STATS();
 #if 1
     prof_start(pr_bndf);
     bndf_.fill_ghosts_H(mflds_);
@@ -518,6 +528,7 @@ struct Psc
       prof_stop(pr_marder);
     }
 
+    MEM_STATS();
     if (checks_.gauss_every_step > 0 &&
         timestep % checks_.gauss_every_step == 0) {
       prof_restart(pr_checks);

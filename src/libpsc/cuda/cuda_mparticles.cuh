@@ -66,6 +66,7 @@ public:
   GT_INLINE void mem_add(const psc::device_vector<T>& v)
   {
 #ifndef __CUDA_ARCH__
+    printf("add %zu\n", allocated_bytes(v));
     mem_particles += allocated_bytes(v);
 #endif
   }
@@ -130,19 +131,30 @@ public:
 
   __host__ void resize(size_t n)
   {
+    MEM_STATS();
     mem_sub(xi4);
+    MEM_STATS();
     mem_sub(pxi4);
+    MEM_STATS();
 
     // grow arrays by 20% only
     if (n > xi4.capacity()) {
-      xi4.reserve(1.2 * n);
-      pxi4.reserve(1.2 * n);
+      //xi4.reserve(0);
+      //xi4.reserve(1.2 * n);
+      printf("GROW %zu\n", xi4.capacity());
+      //pxi4.reserve(0);
+      //pxi4.reserve(1.2 * n);
+      printf("GROW %zu\n", pxi4.capacity());
     }
     xi4.resize(n);
     pxi4.resize(n);
 
+      printf("RESIZE %zu\n", xi4.capacity());
+    printf("RESIZE %zu\n", pxi4.capacity());
     mem_add(xi4);
+    MEM_STATS();
     mem_add(pxi4);
+    MEM_STATS();
   }
 
   __host__ __device__ DParticleCuda operator[](int n) const

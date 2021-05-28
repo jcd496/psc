@@ -26,7 +26,7 @@
 
 // FIXME select a hardcoded case, if not already specified
 #ifndef CASE
-#define CASE CASE_2D
+#define CASE CASE_3D
 #endif
 
 // ======================================================================
@@ -459,7 +459,7 @@ void run()
   // Set up various objects needed to run this case
 
   // -- Balance
-  psc_params.balance_interval = 500;
+  psc_params.balance_interval = 20;
   Balance balance{psc_params.balance_interval, 3};
 
   // -- Sort
@@ -657,6 +657,7 @@ void run()
       prof_stop(pr_inject);
     }
 
+    MEM_STATS();
     // only heating between heating_tb and heating_te
     if (timestep >= g.heating_begin && timestep < g.heating_end &&
         g.heating_interval > 0 && timestep % g.heating_interval == 0) {
@@ -667,6 +668,7 @@ void run()
     }
   };
 
+    MEM_STATS();
   // ----------------------------------------------------------------------
   // setup initial conditions
 

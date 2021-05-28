@@ -11,9 +11,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/partition.h>
 
+extern std::size_t mem_bndp;
 // ----------------------------------------------------------------------
 // cuda_bndp
-
 template <typename CudaMparticles, typename DIM>
 struct cuda_bndp : cuda_mparticles_indexer<typename CudaMparticles::BS>
 {
@@ -53,8 +53,12 @@ struct cuda_bndp : cuda_mparticles_indexer<typename CudaMparticles::BS>
     auto sz = d_bidx.size();
     assert(cmprts.storage.size() == sz);
     assert(cmprts.n_prts == sz);
+    mem_bndp -= allocated_bytes(d_bidx);
     d_bidx.resize(sz + oob);
+    mem_bndp += allocated_bytes(d_bidx);
+    MEM_STATS();
     cmprts.storage.resize(sz + oob);
+    MEM_STATS();
 
     auto begin = thrust::make_zip_iterator(
       thrust::make_tuple(d_bidx.begin(), cmprts.storage.begin()));
