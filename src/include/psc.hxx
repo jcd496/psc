@@ -416,7 +416,11 @@ struct Psc
     mem_stats_csv(log_, timestep, grid().n_patches(), mprts_.size());
 #endif
 
-    if (p_.balance_interval > 0 && timestep % p_.balance_interval == 0) {
+    double mem_fraction = mprts_.mem_fraction();
+    MPI_Allreduce(MPI_IN_PLACE, &mem_fraction, 1, MPI_DOUBLE, MPI_MAX, comm);
+
+    if (p_.balance_interval > 0 &&
+        (timestep % p_.balance_interval == 0 || mem_fraction > 0.98)) {
       balance_(grid_, mprts_);
     }
 
