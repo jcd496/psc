@@ -415,7 +415,6 @@ struct Psc
 #ifdef USE_CUDA
     mem_stats_csv(log_, timestep, grid().n_patches(), mprts_.size());
 #endif
-    mprts_.dump("");
 
     double mem_fraction = mprts_.mem_fraction();
     MPI_Allreduce(MPI_IN_PLACE, &mem_fraction, 1, MPI_DOUBLE, MPI_MAX, comm);
