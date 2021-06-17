@@ -459,7 +459,7 @@ void run()
   // Set up various objects needed to run this case
 
   // -- Balance
-  psc_params.balance_interval = 2000;
+  psc_params.balance_interval = 5000;
   Balance balance{psc_params.balance_interval, 3, true};
 
   // -- Sort
